@@ -23,4 +23,4 @@ runs:
       uses: helm/kind-action@v1.13.0
       if: ${{ inputs.create-kind-cluster == 'true' }}
       with:
-        node_image: kindest/node:v1.28.0
+        node_image: kindest/node:v1.34.0

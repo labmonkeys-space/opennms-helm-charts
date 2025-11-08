@@ -32,5 +32,11 @@ jobs:
       - name: run chart-lint
         run: make lint
 
-      - name: run chart-testing (install)
-        run: ct install --charts charts/core
+      - name: run chart-testing (install Core chart)
+        run: make install-core
+
+      - name: run chart-testing (install Minion chart)
+        run: make install-minion
+
+      - name: run chart-testing (install Sentinel chart)
+        run: make install-sentinel
