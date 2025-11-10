@@ -1,0 +1,53 @@
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ include "core.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "core.labels" . | nindent 4 }}
+    app.opennms.org/component: core
+    {{- with .Values.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  replicas: 1
+  serviceName: {{ include "core.fullname" . }}-headless
+  selector:
+    matchLabels:
+      {{- include "core.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "core.selectorLabels" . | nindent 8 }}
+    spec:
+      initContainers:
+        - name: {{ .Chart.Name }}-init
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy | quote }}
+          args:
+              - -i
+          envFrom:
+            - configMapRef:
+                name: core-configmap
+            - secretRef:
+                name: core-credentials
+      containers:
+        - name: {{ .Chart.Name | quote }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy | quote }}
+          args:
+            - -f
+          envFrom:
+            - configMapRef:
+                name: core-configmap
+            - secretRef:
+                name: core-credentials
+          ports:
+            - name: http
+              containerPort: 8980
+              protocol: TCP
+            - name: karaf-ssh
+              containerPort: 8101
+              protocol: TCP

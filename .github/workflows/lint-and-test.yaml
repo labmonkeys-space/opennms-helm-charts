@@ -24,11 +24,6 @@ jobs:
         with:
           create-kind-cluster: "true"
 
-      - name: setup go lang
-        uses: ./.github/actions/setup_environment
-        with:
-          enable_go: true
-
       - name: run chart-lint
         run: make lint
 

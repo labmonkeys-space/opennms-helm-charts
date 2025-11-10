@@ -1,0 +1,13 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: core-configmap
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "core.labels" . | nindent 4 }}
+data:
+  TZ: {{ .Values.timezone | default "UTC" | quote }}
+  OPENNMS_DBNAME: {{ .Values.postgresql.opennmsDbName | quote }}
+  POSTGRES_HOST: {{ .Values.postgresql.host | quote }}
+  POSTGRES_PORT: {{ .Values.postgresql.port | quote }}

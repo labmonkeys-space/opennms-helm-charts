@@ -1,0 +1,20 @@
+---
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  namespace: default
+  name: cluster-helm-lint
+spec:
+  instances: 1
+  imageName: ghcr.io/cloudnative-pg/postgresql:15-system-trixie
+  storage:
+    size: 1Gi
+  enableSuperuserAccess: true
+  superuserSecret:
+    name: cluster-superuser
+  bootstrap:
+    initdb:
+      database: opennms
+      owner: opennms_dba
+      secret:
+        name: opennms-core-db

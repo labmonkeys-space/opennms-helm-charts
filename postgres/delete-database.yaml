@@ -1,0 +1,11 @@
+---
+apiVersion: postgresql.cnpg.io/v1
+kind: Database
+metadata:
+  name: opennms
+spec:
+  name: opennms
+  owner: opennms_dba
+  cluster:
+    name: cluster-helm-lint
+  databaseReclaimPolicy: delete
