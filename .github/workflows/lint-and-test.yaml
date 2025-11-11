@@ -14,24 +14,33 @@ jobs:
   helm-lint-and-test:
     runs-on: ubuntu-latest
     steps:
-      - name: checkout
+      - name: Checkout
         uses: actions/checkout@v5
         with:
           fetch-depth: 0
 
-      - name: setup helm lint requirements
+      - name: Setup Helm Lint Requirements
         uses: ./.github/actions/setup_helmlint
         with:
           create-kind-cluster: "true"
 
-      - name: run chart-lint
+      - name: Run Helm Docs
+        uses: losisin/helm-docs-github-action@v1
+        with:
+          chart-search-root: ./charts
+          git-push: true
+          git-push-user-name: "GitHub Action"
+          git-push-user-email: "twiki@labmonkeys.space"
+          git-commit-message: "docs: Update Helm Readme files"
+
+      - name: Run Chart-lint
         run: make lint
 
-      - name: run chart-testing (install Core chart)
-        run: make install-core
+      - name: Chart testing install Core chart
+        run: make test-install-core
 
-      - name: run chart-testing (install Minion chart)
-        run: make install-minion
+      - name: Chart testing install Minion chart
+        run: make test-install-minion
 
-      - name: run chart-testing (install Sentinel chart)
-        run: make install-sentinel
+      - name: Chart testing install Sentinel chart
+        run: make test-install-sentinel

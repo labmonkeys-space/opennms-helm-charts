@@ -50,7 +50,7 @@ securityContext: {}
 service:
   type: ClusterIP
   port: 8980
-  karaf_ssh:
+  karaf:
     port: 8101
   webui:
     port: 8980
@@ -124,13 +124,23 @@ resources: {}
 
 # This is to setup the liveness and readiness probes more information can be found here: https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/
 livenessProbe:
-  httpGet:
-    path: /
-    port: http
+  exec:
+    command:
+      - "pgrep"
+      - "java"
+  initialDelaySeconds: 10
+  periodSeconds: 10
+  timeoutSeconds: 5
+  failureThreshold: 6
+
 readinessProbe:
   httpGet:
-    path: /
-    port: http
+    port: webui
+    path: /opennms/login.jsp
+  initialDelaySeconds: 90
+  timeoutSeconds: 3
+  failureThreshold: 20
+  periodSeconds: 5
 
 # This section is for setting up autoscaling more information can be found here: https://kubernetes.io/docs/concepts/workloads/autoscaling/
 autoscaling:

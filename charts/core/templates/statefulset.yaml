@@ -45,9 +45,17 @@ spec:
             - secretRef:
                 name: core-credentials
           ports:
-            - name: http
+            - name: webui
               containerPort: 8980
               protocol: TCP
-            - name: karaf-ssh
+            - name: karaf
               containerPort: 8101
               protocol: TCP
+          {{- with .Values.livenessProbe }}
+          livenessProbe:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.readinessProbe }}
+          readinessProbe:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
