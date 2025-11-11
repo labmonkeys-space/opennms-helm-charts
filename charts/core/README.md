@@ -1,6 +1,6 @@
 # core
 
-![Version: 0.1.2](https://img.shields.io/badge/Version-0.1.2-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: 35.0.3](https://img.shields.io/badge/AppVersion-35.0.3-informational?style=flat-square)
+![Version: 0.1.3](https://img.shields.io/badge/Version-0.1.3-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: 35.0.3](https://img.shields.io/badge/AppVersion-35.0.3-informational?style=flat-square)
 
 A Helm chart for Kubernetes
 
@@ -32,8 +32,12 @@ A Helm chart for Kubernetes
 | ingress.hosts[0].paths[0].path | string | `"/"` |  |
 | ingress.hosts[0].paths[0].pathType | string | `"ImplementationSpecific"` |  |
 | ingress.tls | list | `[]` |  |
-| livenessProbe.httpGet.path | string | `"/"` |  |
-| livenessProbe.httpGet.port | string | `"http"` |  |
+| livenessProbe.exec.command[0] | string | `"pgrep"` |  |
+| livenessProbe.exec.command[1] | string | `"java"` |  |
+| livenessProbe.failureThreshold | int | `6` |  |
+| livenessProbe.initialDelaySeconds | int | `10` |  |
+| livenessProbe.periodSeconds | int | `10` |  |
+| livenessProbe.timeoutSeconds | int | `5` |  |
 | nameOverride | string | `""` |  |
 | nodeSelector | object | `{}` |  |
 | podAnnotations | object | `{}` |  |
@@ -46,11 +50,15 @@ A Helm chart for Kubernetes
 | postgresql.password | string | `"Change_Me_Postgres"` |  |
 | postgresql.port | int | `5432` |  |
 | postgresql.user | string | `"postgres"` |  |
-| readinessProbe.httpGet.path | string | `"/"` |  |
-| readinessProbe.httpGet.port | string | `"http"` |  |
+| readinessProbe.failureThreshold | int | `20` |  |
+| readinessProbe.httpGet.path | string | `"/opennms/login.jsp"` |  |
+| readinessProbe.httpGet.port | string | `"webui"` |  |
+| readinessProbe.initialDelaySeconds | int | `90` |  |
+| readinessProbe.periodSeconds | int | `5` |  |
+| readinessProbe.timeoutSeconds | int | `3` |  |
 | resources | object | `{}` |  |
 | securityContext | object | `{}` |  |
-| service.karaf_ssh.port | int | `8101` |  |
+| service.karaf.port | int | `8101` |  |
 | service.port | int | `8980` |  |
 | service.type | string | `"ClusterIP"` |  |
 | service.webui.port | int | `8980` |  |
