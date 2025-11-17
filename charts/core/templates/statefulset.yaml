@@ -51,6 +51,39 @@ spec:
             - name: karaf
               containerPort: 8101
               protocol: TCP
+          volumeMounts:
+            # Core configuration directory (Required for production)
+            - name: core-etc
+              mountPath: /opt/opennms/etc
+            # Persistence of requisition cache
+            - name: core-etc-imports
+              mountPath: /opt/opennms/etc/imports
+            # Persistence of detectors and policies for requisitions
+            - name: core-etc-foreign-source
+              mountPath: /opt/opennms/etc/foreign-source
+            # Peristence of RRD, reports and MIBS
+            - name: core-data
+              mountPath: /opennms-data
+            {{- if .Values.persistence.karDeploy.enabled }}
+            # Persistence of a KAR deploy directory
+            - name: core-kar-deploy
+              mountPath: /opt/opennms/deploy
+            {{- end }}
+            {{- if .Values.persistence.overlay.enabled }}
+            # Overlay directories for easier configuration management
+            - name: core-overlay
+              mountPath: /opt/opennms-overlay
+            {{- end }}
+            {{- if .Values.persistence.etcOverlay.enabled }}
+            # Overlay for /opt/opennms/etc
+            - name: core-etc-overlay
+              mountPath: /opt/opennms-etc-overlay
+            {{- end }}
+            {{- if .Values.persistence.jettyOverlay.enabled }}
+            # Overlay for /opt/opennms/jetty/webinf
+            - name: core-jetty-webinf-overlay
+              mountPath: /opt/opennms-jetty-webinf-overlay
+            {{- end }}
           {{- with .Values.livenessProbe }}
           livenessProbe:
             {{- toYaml . | nindent 12 }}
@@ -59,3 +92,130 @@ spec:
           readinessProbe:
             {{- toYaml . | nindent 12 }}
           {{- end }}
+      volumes:
+        # Empty dir volumes for non-persistent overlays (if persistence is disabled)
+        {{- if not .Values.persistence.karDeploy.enabled }}
+        - name: core-kar-deploy
+          emptyDir: {}
+        {{- end }}
+        {{- if not .Values.persistence.overlay.enabled }}
+        - name: core-overlay
+          emptyDir: {}
+        {{- end }}
+        {{- if not .Values.persistence.etcOverlay.enabled }}
+        - name: core-etc-overlay
+          emptyDir: {}
+        {{- end }}
+        {{- if not .Values.persistence.jettyOverlay.enabled }}
+        - name: core-jetty-webinf-overlay
+          emptyDir: {}
+        {{- end }}
+  volumeClaimTemplates:
+    # Persistence of requisition cache
+    - metadata:
+        name: core-etc
+        labels:
+          {{- include "core.labels" . | nindent 10 }}
+      spec:
+        accessModes:
+        - {{ .Values.persistence.etc.accessMode | default "ReadWriteOnce" | quote }}
+        storageClassName: {{ .Values.persistence.etc.storageClass | default "" | quote }}
+        resources:
+          requests:
+            storage: {{ .Values.persistence.etc.size | default "500Mi" | quote }}
+    - metadata:
+        name: core-etc-imports
+        labels:
+          {{- include "core.labels" . | nindent 10 }}
+      spec:
+        accessModes:
+        - {{ .Values.persistence.etcImports.accessMode | default "ReadWriteOnce" | quote }}
+        storageClassName: {{ .Values.persistence.etcImports.storageClass | default "" | quote }}
+        resources:
+          requests:
+            storage: {{ .Values.persistence.etcImports.size | default "500Mi" | quote }}
+    - metadata:
+        name: core-etc-foreign-source
+        labels:
+          {{- include "core.labels" . | nindent 10 }}
+      spec:
+        accessModes:
+        - {{ .Values.persistence.etcForeignSource.accessMode | default "ReadWriteOnce" | quote }}
+        storageClassName: {{ .Values.persistence.etcForeignSource.storageClass | default "" | quote }}
+        resources:
+          requests:
+            storage: {{ .Values.persistence.etcForeignSource.size | default "500Mi" | quote }}
+    - metadata:
+        name: core-data
+        labels:
+          {{- include "core.labels" . | nindent 10 }}
+      spec:
+        accessModes:
+        - {{ .Values.persistence.data.accessMode | default "ReadWriteOnce" | quote }}
+        storageClassName: {{ .Values.persistence.data.storageClass | default "" | quote }}
+        resources:
+          requests:
+            storage: {{ .Values.persistence.data.size | default "5Gi" | quote }}
+    {{- if .Values.persistence.karDeploy.enabled }}
+    - metadata:
+        name: core-kar-deploy
+        labels:
+          {{- include "core.labels" . | nindent 10 }}
+      spec:
+        accessModes:
+        - {{ .Values.persistence.karDeploy.accessMode | default "ReadWriteOnce" | quote }}
+        storageClassName: {{ .Values.persistence.karDeploy.storageClass | default "" | quote }}
+        resources:
+          requests:
+            storage: {{ .Values.persistence.karDeploy.size | default "500Mi" | quote }}
+    {{- end }}
+    {{- if .Values.persistence.overlay.enabled }}
+    - metadata:
+        name: core-overlay
+        labels:
+          {{- include "core.labels" . | nindent 10 }}
+      spec:
+        accessModes:
+        - {{ .Values.persistence.overlay.accessMode | default "ReadWriteOnce" | quote }}
+        storageClassName: {{ .Values.persistence.overlay.storageClass | default "" | quote }}
+        resources:
+          requests:
+            storage: {{ .Values.persistence.overlay.size | default "500Mi" | quote }}
+    {{- end }}
+    {{- if .Values.persistence.etcOverlay.enabled }}
+    - metadata:
+        name: core-etc-overlay
+        labels:
+          {{- include "core.labels" . | nindent 10 }}
+      spec:
+        accessModes:
+        - {{ .Values.persistence.etcOverlay.accessMode | default "ReadWriteOnce" | quote }}
+        storageClassName: {{ .Values.persistence.etcOverlay.storageClass | default "" | quote }}
+        resources:
+          requests:
+            storage: {{ .Values.persistence.etcOverlay.size | default "500Mi" | quote }}
+    {{- end }}
+    {{- if .Values.persistence.jettyOverlay.enabled }}
+    - metadata:
+        name: core-jetty-webinf-overlay
+        labels:
+          {{- include "core.labels" . | nindent 10 }}
+      spec:
+        accessModes:
+        - {{ .Values.persistence.jettyOverlay.accessMode | default "ReadWriteOnce" | quote }}
+        storageClassName: {{ .Values.persistence.jettyOverlay.storageClass | default "" | quote }}
+        resources:
+          requests:
+            storage: {{ .Values.persistence.jettyOverlay.size | default "500Mi" | quote }}
+    {{- end }}
+    - metadata:
+        name: core-data
+        labels:
+          {{- include "core.labels" . | nindent 10 }}
+      spec:
+        accessModes:
+        - {{ .Values.persistence.data.accessMode | default "ReadWriteOnce" quote }}
+        storageClassName: {{ .Values.persistence.data.storageClass | default "" | quote }}
+        resources:
+          requests:
+            storage: {{ .Values.persistence.data.size | default "5Gi" | quote }}
