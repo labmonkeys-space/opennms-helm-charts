@@ -58,6 +58,7 @@ A Helm chart for Kubernetes
 | readinessProbe.timeoutSeconds | int | `3` |  |
 | resources | object | `{}` |  |
 | securityContext | object | `{}` |  |
+| selectorLabels."app.opennms.org/component" | string | `"core"` |  |
 | service.karaf.port | int | `8101` |  |
 | service.port | int | `8980` |  |
 | service.type | string | `"ClusterIP"` |  |
