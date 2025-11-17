@@ -3,6 +3,7 @@ kind: Service
 metadata:
   name: {{ include "core.fullname" . }}
   labels:
+    app.opennms.org/component: core
     {{- include "core.labels" . | nindent 4 }}
 spec:
   type: {{ .Values.service.type }}

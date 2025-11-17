@@ -5,6 +5,7 @@ metadata:
   name: core-configmap
   namespace: {{ .Release.Namespace }}
   labels:
+    app.opennms.org/component: core
     {{- include "core.labels" . | nindent 4 }}
 data:
   TZ: {{ .Values.timezone | default "UTC" | quote }}
