@@ -38,6 +38,7 @@ help:
 	@echo "  test-install-sentinel - Test installing Sentinel Helm chart into the kind cluster"
 	@echo "  install-all           - Test installing all Helm charts into the kind cluster"
 	@echo "  readme                - Generate README.md files for Helm charts using helm-docs"
+	@echo "  render-core           - Render the Core Helm chart templates and output to build/chart-output.yaml"
 
 build:
 	@echo -n "👩‍🔧 Create build directory     ... "
@@ -103,7 +104,7 @@ readme:
 .PHONY: render-core
 render-core:
 	@echo -n "🎨 Rendering Helm charts      ... "
-	@helm template core charts/core 1>$(RENDER_OUTPUT) 2>$(README_LOG) || { cat $(RENDER_LOG); exit 1; }
+	@helm template core charts/core 1>$(RENDER_OUTPUT) 2>$(RENDER_LOG) || { cat $(RENDER_LOG); exit 1; }
 	@cat $(RENDER_OUTPUT)
 	@echo "$(OK)"
 
