@@ -107,22 +107,28 @@ postgresql:
   opennmsDbPassword: "Change_Me_OpenNMS_DBA"
 
 persistence:
-  etc:
-    storageClass: ""
-    size: 500Mi
-    accessMode: "ReadWriteOnce"
-  etcImports:
-    storageClass: ""
-    size: 500Mi
-    accessMode: "ReadWriteOnce"
-  etcForeignSource:
-    storageClass: ""
-    size: 500Mi
-    accessMode: "ReadWriteOnce"
   data:
-    storageClass: ""
-    size: 5Gi
-    accessMode: "ReadWriteOnce"
+    readOnly: false
+    accessModes:
+      - ReadWriteOnce
+    size: 50Gi
+  etc:
+    readOnly: false
+    accessModes:
+      - ReadWriteOnce
+    size: 100Mi
+  etcImports:
+    enabled: false
+    readOnly: false
+    accessModes:
+      - ReadWriteOnce
+    size: 100Mi
+  etcForeignSource:
+    enabled: false
+    readOnly: false
+    accessModes:
+      - ReadWriteOnce
+    size: 100Mi
   karDeploy:
     enabled: false
   overlay:

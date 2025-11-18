@@ -111,111 +111,123 @@ spec:
           emptyDir: {}
         {{- end }}
   volumeClaimTemplates:
-    # Persistence of requisition cache
+    # Persistence of data directory (RRD, reports, MIBS)
+    - metadata:
+        name: core-data
+        labels:
+          {{- include "core.labels" . | nindent 10 }}
+      spec:
+        {{- if .Values.persistence.data.storageClass }}
+        storageClassName: {{ .Values.persistence.data.storageClass | quote }}
+        {{- end }}
+        accessModes:
+          - {{ .Values.persistence.data.accessMode | default "ReadWriteOnce" | quote }}
+        resources:
+          requests:
+            storage: {{ .Values.persistence.data.size | default "50Gi" | quote }}
+    # Persistence of configuration directory
     - metadata:
         name: core-etc
         labels:
           {{- include "core.labels" . | nindent 10 }}
       spec:
+        {{- if .Values.persistence.etc.storageClass }}
+        storageClassName: {{ .Values.persistence.etc.storageClass | quote }}
+        {{- end }}
         accessModes:
-        - {{ .Values.persistence.etc.accessMode | default "ReadWriteOnce" | quote }}
-        storageClassName: {{ .Values.persistence.etc.storageClass | default "" | quote }}
+            - {{ .Values.persistence.etc.accessMode | default "ReadWriteOnce" | quote }}
         resources:
           requests:
             storage: {{ .Values.persistence.etc.size | default "500Mi" | quote }}
+    # Persistence of requisition cache
     - metadata:
         name: core-etc-imports
         labels:
           {{- include "core.labels" . | nindent 10 }}
       spec:
+        {{- if .Values.persistence.etcImports.storageClass }}
+        storageClassName: {{ .Values.persistence.etcImports.storageClass | quote }}
+        {{- end }}
         accessModes:
-        - {{ .Values.persistence.etcImports.accessMode | default "ReadWriteOnce" | quote }}
-        storageClassName: {{ .Values.persistence.etcImports.storageClass | default "" | quote }}
+            - {{ .Values.persistence.etcImports.accessMode | default "ReadWriteOnce" | quote }}
         resources:
           requests:
-            storage: {{ .Values.persistence.etcImports.size | default "500Mi" | quote }}
+            storage: {{ .Values.persistence.etcImports.size | default "100Mi" | quote }}
+    # Persistence of requisition policies and detectors
     - metadata:
         name: core-etc-foreign-source
         labels:
           {{- include "core.labels" . | nindent 10 }}
       spec:
+        {{- if .Values.persistence.etcForeignSource.storageClass }}
+        storageClassName: {{ .Values.persistence.etcForeignSource.storageClass | quote }}
+        {{- end }}
         accessModes:
-        - {{ .Values.persistence.etcForeignSource.accessMode | default "ReadWriteOnce" | quote }}
-        storageClassName: {{ .Values.persistence.etcForeignSource.storageClass | default "" | quote }}
+            - {{ .Values.persistence.etcForeignSource.accessMode | default "ReadWriteOnce" | quote }}
         resources:
           requests:
-            storage: {{ .Values.persistence.etcForeignSource.size | default "500Mi" | quote }}
-    - metadata:
-        name: core-data
-        labels:
-          {{- include "core.labels" . | nindent 10 }}
-      spec:
-        accessModes:
-        - {{ .Values.persistence.data.accessMode | default "ReadWriteOnce" | quote }}
-        storageClassName: {{ .Values.persistence.data.storageClass | default "" | quote }}
-        resources:
-          requests:
-            storage: {{ .Values.persistence.data.size | default "5Gi" | quote }}
+            storage: {{ .Values.persistence.etcForeignSource.size | default "100Mi" | quote }}
     {{- if .Values.persistence.karDeploy.enabled }}
+    # Persistence of KAR deploy directory
     - metadata:
         name: core-kar-deploy
         labels:
           {{- include "core.labels" . | nindent 10 }}
       spec:
+        {{- if .Values.persistence.karDeploy.storageClass }}
+        storageClassName: {{ .Values.persistence.karDeploy.storageClass | quote }}
+        {{- end }}
         accessModes:
-        - {{ .Values.persistence.karDeploy.accessMode | default "ReadWriteOnce" | quote }}
-        storageClassName: {{ .Values.persistence.karDeploy.storageClass | default "" | quote }}
+          - {{ .Values.persistence.karDeploy.accessMode | default "ReadWriteOnce" | quote }}
         resources:
           requests:
-            storage: {{ .Values.persistence.karDeploy.size | default "500Mi" | quote }}
+            storage: {{ .Values.persistence.karDeploy.size | default "100Mi" | quote }}
     {{- end }}
     {{- if .Values.persistence.overlay.enabled }}
+    # Persistence of etc overlay directory
     - metadata:
         name: core-overlay
         labels:
           {{- include "core.labels" . | nindent 10 }}
       spec:
+        {{- if .Values.persistence.overlay.storageClass }}
+        storageClassName: {{ .Values.persistence.overlay.storageClass | quote }}
+        {{- end }}
         accessModes:
-        - {{ .Values.persistence.overlay.accessMode | default "ReadWriteOnce" | quote }}
-        storageClassName: {{ .Values.persistence.overlay.storageClass | default "" | quote }}
+          - {{ .Values.persistence.overlay.accessMode | default "ReadWriteOnce" | quote }}
         resources:
           requests:
-            storage: {{ .Values.persistence.overlay.size | default "500Mi" | quote }}
+            storage: {{ .Values.persistence.overlay.size | default "100Mi" | quote }}
     {{- end }}
     {{- if .Values.persistence.etcOverlay.enabled }}
+    # Persistence of etc-overlay directory
     - metadata:
         name: core-etc-overlay
         labels:
           {{- include "core.labels" . | nindent 10 }}
       spec:
+        {{- if .Values.persistence.etcOverlay.storageClass }}
+        storageClassName: {{ .Values.persistence.etcOverlay.storageClass | quote }}
+        {{- end }}
         accessModes:
-        - {{ .Values.persistence.etcOverlay.accessMode | default "ReadWriteOnce" | quote }}
-        storageClassName: {{ .Values.persistence.etcOverlay.storageClass | default "" | quote }}
+          - {{ .Values.persistence.etcOverlay.accessMode | default "ReadWriteOnce" | quote }}
         resources:
           requests:
-            storage: {{ .Values.persistence.etcOverlay.size | default "500Mi" | quote }}
+            storage: {{ .Values.persistence.etcOverlay.size | default "100Mi" | quote }}
     {{- end }}
     {{- if .Values.persistence.jettyOverlay.enabled }}
+    # Persistence of Jetty WEB-INF overlay directory
     - metadata:
         name: core-jetty-webinf-overlay
         labels:
           {{- include "core.labels" . | nindent 10 }}
       spec:
+        {{- if .Values.persistence.jettyOverlay.storageClass }}
+        storageClassName: {{ .Values.persistence.jettyOverlay.storageClass | quote }}
+        {{- end }}
         accessModes:
-        - {{ .Values.persistence.jettyOverlay.accessMode | default "ReadWriteOnce" | quote }}
-        storageClassName: {{ .Values.persistence.jettyOverlay.storageClass | default "" | quote }}
+          - {{ .Values.persistence.jettyOverlay.accessMode | default "ReadWriteOnce" | quote }}
         resources:
           requests:
-            storage: {{ .Values.persistence.jettyOverlay.size | default "500Mi" | quote }}
+            storage: {{ .Values.persistence.jettyOverlay.size | default "100Mi" | quote }}
     {{- end }}
-    - metadata:
-        name: core-data
-        labels:
-          {{- include "core.labels" . | nindent 10 }}
-      spec:
-        accessModes:
-        - {{ .Values.persistence.data.accessMode | default "ReadWriteOnce" quote }}
-        storageClassName: {{ .Values.persistence.data.storageClass | default "" | quote }}
-        resources:
-          requests:
-            storage: {{ .Values.persistence.data.size | default "5Gi" | quote }}
