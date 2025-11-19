@@ -142,3 +142,9 @@ clean-postgres: kind-create
 	@kubectl delete -f stubs/postgres/secret-superuser.yaml 2>&1>>$(CNPG_INSTALL_LOGOUTPUT) || { cat $(CNPG_INSTALL_LOGOUTPUT); exit 1; }
 	@kubectl delete -f stubs/postgres/secret-opennms-core-db.yaml 2>&1>>$(CNPG_INSTALL_LOGOUTPUT) || { cat $(CNPG_INSTALL_LOGOUTPUT); exit 1; }
 	@echo "$(OK)"
+
+.PHONY: clean
+clean: kind-delete
+	@echo -n "🧼 Cleaning build directory   ... "
+	@rm -rf $(BUILD_DIR)/*
+	@echo "$(OK)"
