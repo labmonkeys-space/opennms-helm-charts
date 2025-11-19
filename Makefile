@@ -68,7 +68,7 @@ kind-create: deps
 
 .PHONY: kind-delete
 kind-delete: deps
-	@echo "👩‍🔧 Deleting kind cluster "
+	@echo "🧼 Deleting kind cluster "
 	@kind delete cluster --name helm-lint
 
 .PHONY: test-install-core
@@ -117,16 +117,16 @@ install-postgres: kind-create
 	@helm upgrade --install cnpg --namespace cnpg-system --create-namespace cnpg/cloudnative-pg 2>&1>>$(CNPG_INSTALL_LOGOUTPUT) || { cat $(CNPG_INSTALL_LOGOUTPUT); exit 1; }
 	@echo "$(OK)"
 	@echo -n "🚀 Create super user secret   ... "
-	@kubectl apply -f stubs/postgres/secret-superuser.yaml 2>&1>>$(CNPG_INSTALL_LOGOUTPUT) || { cat $(CNPG_INSTALL_LOGOUTPUT); exit 1; }
+	@kubectl apply -f develop/postgres/secret-superuser.yaml 2>&1>>$(CNPG_INSTALL_LOGOUTPUT) || { cat $(CNPG_INSTALL_LOGOUTPUT); exit 1; }
 	@echo "$(OK)"
 	@echo -n "🚀 Create OpenNMS user secret ... "
-	@kubectl apply -f stubs/postgres/secret-opennms-core-db.yaml 2>&1>>$(CNPG_INSTALL_LOGOUTPUT) || { cat $(CNPG_INSTALL_LOGOUTPUT); exit 1; }
+	@kubectl apply -f develop/postgres/secret-opennms-core-db.yaml 2>&1>>$(CNPG_INSTALL_LOGOUTPUT) || { cat $(CNPG_INSTALL_LOGOUTPUT); exit 1; }
 	@echo "$(OK)"
 	@echo -n "⏱️ Waiting for CNPG operator  ... "
 	@kubectl wait --for=condition=available --timeout=300s deployment/cnpg-cloudnative-pg -n cnpg-system 2>&1>>$(CNPG_INSTALL_LOGOUTPUT) || { cat $(CNPG_INSTALL_LOGOUTPUT); exit 1; }
 	@echo "$(OK)"
 	@echo -n "🚀 Install Postgres Cluster   ... "
-	@kubectl apply -f stubs/postgres/pg-database.yaml 2>&1>>$(CNPG_INSTALL_LOGOUTPUT) || { cat $(CNPG_INSTALL_LOGOUTPUT); exit 1; }
+	@kubectl apply -f develop/postgres/pg-database.yaml 2>&1>>$(CNPG_INSTALL_LOGOUTPUT) || { cat $(CNPG_INSTALL_LOGOUTPUT); exit 1; }
 	@echo "$(OK)"
 	@echo -n "⏱️ Waiting for database init  ... "
 	@sleep 5; kubectl wait --for=condition=complete --timeout=900s job/cluster-helm-lint-1-initdb -n default 2>&1>>$(CNPG_INSTALL_LOGOUTPUT) || { cat $(CNPG_INSTALL_LOGOUTPUT); exit 1; }
@@ -136,11 +136,11 @@ install-postgres: kind-create
 	@echo "$(OK)"
 
 .PHONY: clean-postgres
-clean-postgres: kind-create
+clean-postgres:
 	@echo -n "🧼 Deleting Postgres Cluster  ... "
-	@kubectl delete -f stubs/postgres/pg-database.yaml 2>&1>>$(CNPG_INSTALL_LOGOUTPUT) || { cat $(CNPG_INSTALL_LOGOUTPUT); exit 1; }
-	@kubectl delete -f stubs/postgres/secret-superuser.yaml 2>&1>>$(CNPG_INSTALL_LOGOUTPUT) || { cat $(CNPG_INSTALL_LOGOUTPUT); exit 1; }
-	@kubectl delete -f stubs/postgres/secret-opennms-core-db.yaml 2>&1>>$(CNPG_INSTALL_LOGOUTPUT) || { cat $(CNPG_INSTALL_LOGOUTPUT); exit 1; }
+	@kubectl delete -f develop/postgres/pg-database.yaml 2>&1>>$(CNPG_INSTALL_LOGOUTPUT) || { cat $(CNPG_INSTALL_LOGOUTPUT); exit 1; }
+	@kubectl delete -f develop/postgres/secret-superuser.yaml 2>&1>>$(CNPG_INSTALL_LOGOUTPUT) || { cat $(CNPG_INSTALL_LOGOUTPUT); exit 1; }
+	@kubectl delete -f develop/postgres/secret-opennms-core-db.yaml 2>&1>>$(CNPG_INSTALL_LOGOUTPUT) || { cat $(CNPG_INSTALL_LOGOUTPUT); exit 1; }
 	@echo "$(OK)"
 
 .PHONY: clean
