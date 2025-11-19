@@ -33,6 +33,10 @@ spec:
                 name: core-configmap
             - secretRef:
                 name: core-credentials
+          volumeMounts:
+            # Core configuration directory (Required for production)
+            - name: core-etc
+              mountPath: /opt/opennms/etc
       containers:
         - name: {{ .Chart.Name | quote }}
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
