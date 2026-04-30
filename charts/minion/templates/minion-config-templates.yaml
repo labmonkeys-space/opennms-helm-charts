@@ -9,7 +9,6 @@ metadata:
   name: {{ include "minion.fullname" . }}-config-templates
   namespace: {{ .Release.Namespace }}
   labels:
-    app.opennms.org/component: minion
     {{- include "minion.labels" . | nindent 4 }}
 data:
   instance-id.properties: |

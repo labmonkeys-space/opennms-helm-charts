@@ -29,9 +29,6 @@ serviceAccount:
   annotations: {}
   name: ""
 
-selectorLabels:
-  app.opennms.org/component: sentinel
-
 podAnnotations: {}
 podLabels: {}
 

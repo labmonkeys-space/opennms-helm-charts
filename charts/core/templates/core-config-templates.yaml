@@ -9,7 +9,6 @@ metadata:
   name: {{ include "core.fullname" . }}-config-templates
   namespace: {{ .Release.Namespace }}
   labels:
-    app.opennms.org/component: core
     {{- include "core.labels" . | nindent 4 }}
 data:
   instance-id.properties: |
@@ -43,8 +42,8 @@ data:
     read.url={{ .Values.prometheusRemoteWriter.readUrl }}
     {{- end }}
     {{- if .Values.prometheusRemoteWriter.auth.existingSecret }}
-    write.user=${PRW_USERNAME}
-    write.password=${PRW_PASSWORD}
+    auth.basic.username=${PRW_USERNAME}
+    auth.basic.password=${PRW_PASSWORD}
     {{- end }}
 
   # The "__" delimiter is decoded to "/" by the envsubst init container,

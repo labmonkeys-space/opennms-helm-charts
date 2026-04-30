@@ -17,8 +17,8 @@ this umbrella.
 
 | Repository | Name | Version |
 |------------|------|---------|
-| file://../core | core | 0.2.0 |
-| file://../sentinel | sentinel | 0.2.0 |
+| file://../core | core | =0.2.0 |
+| file://../sentinel | sentinel | =0.2.0 |
 
 ## Values
 

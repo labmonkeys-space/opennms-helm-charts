@@ -3,7 +3,6 @@ kind: Service
 metadata:
   name: {{ include "sentinel.fullname" . }}
   labels:
-    app.opennms.org/component: sentinel
     {{- include "sentinel.labels" . | nindent 4 }}
 spec:
   type: {{ .Values.service.type }}

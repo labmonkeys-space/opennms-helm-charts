@@ -75,7 +75,7 @@ A Helm chart for Kubernetes
 | postgresql.auth.superuserPassword | string | `"Change_Me_Postgres"` |  |
 | postgresql.auth.username | string | `"opennms_dba"` |  |
 | postgresql.database | string | `"opennms"` |  |
-| postgresql.host | string | `"cluster-helm-lint-rw.default.svc.cluster.local"` |  |
+| postgresql.host | string | `""` |  |
 | postgresql.port | int | `5432` |  |
 | prometheus.jmxExporter.enabled | bool | `false` |  |
 | prometheus.jmxExporter.port | int | `9299` |  |
@@ -93,7 +93,6 @@ A Helm chart for Kubernetes
 | readinessProbe.timeoutSeconds | int | `3` |  |
 | resources | object | `{}` |  |
 | securityContext | object | `{}` |  |
-| selectorLabels."app.opennms.org/component" | string | `"core"` |  |
 | service.karaf.port | int | `8101` |  |
 | service.port | int | `8980` |  |
 | service.type | string | `"ClusterIP"` |  |

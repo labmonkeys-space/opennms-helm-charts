@@ -35,6 +35,7 @@ Common labels
 */}}
 {{- define "core.labels" -}}
 helm.sh/chart: {{ include "core.chart" . }}
+app.opennms.org/component: core
 {{ include "core.selectorLabels" . }}
 {{- if .Chart.AppVersion }}
 app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
@@ -176,7 +177,7 @@ This helper is duplicated in sentinel/ and minion/ — keep them in sync.
     - -c
     - |
       set -eu
-      apk add --no-cache gettext >/dev/null 2>&1 || true
+      apk add --no-cache gettext >/dev/null
       # ConfigMap data keys cannot contain "/", so subpaths under etc/ are
       # encoded with "__" in the key name and decoded back to "/" here.
       # Example: opennms.properties.d__timeseries.properties

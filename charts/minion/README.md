@@ -61,7 +61,6 @@ A Helm chart for Kubernetes
 | replicaCount | int | `1` |  |
 | resources | object | `{}` |  |
 | securityContext | object | `{}` |  |
-| selectorLabels."app.opennms.org/component" | string | `"minion"` |  |
 | service.karaf.port | int | `8201` |  |
 | service.type | string | `"ClusterIP"` |  |
 | serviceAccount.annotations | object | `{}` |  |

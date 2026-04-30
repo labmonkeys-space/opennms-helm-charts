@@ -5,9 +5,11 @@
 persistence:
   enabled: false
 
-# Default postgresql.host already points at CNPG's RW service.
-# Lab-mode credentials match the CNPG superuser/db creds.
+# Point at the CNPG-managed Postgres set up by `make install-postgres`.
+postgresql:
+  host: cluster-helm-lint-rw.default.svc.cluster.local
 
-# No Kafka in this Core-only test — bootstrap.servers stays empty.
-# Core boots and its WebUI reaches readiness; Kafka-using features will error
-# in logs but won't block the install or the wget smoke test.
+# No Kafka in this Core-only test — bootstrap.servers stays empty so the
+# chart skips rendering Kafka cfg files. Core boots and its WebUI reaches
+# readiness; Kafka-using features will error in logs but won't block the
+# install or the wget smoke test.

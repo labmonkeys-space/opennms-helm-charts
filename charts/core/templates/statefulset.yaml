@@ -5,7 +5,6 @@ metadata:
   name: {{ include "core.fullname" . }}
   namespace: {{ .Release.Namespace }}
   labels:
-    app.opennms.org/component: core
     {{- include "core.labels" . | nindent 4 }}
 spec:
   replicas: 1
@@ -64,7 +63,7 @@ spec:
             - |
               set -eu
               mkdir -p /opt/opennms-overlay/deploy
-              wget -q -O /opt/opennms-overlay/deploy/prometheus-remote-writer.kar \
+              wget --tries=3 --timeout=30 -q -O /opt/opennms-overlay/deploy/prometheus-remote-writer.kar \
                 "$KAR_URL"
           env:
             - name: KAR_URL

@@ -7,7 +7,6 @@ metadata:
   name: {{ include "core.fullname" . }}-headless
   namespace: {{ .Release.Namespace }}
   labels:
-    app.opennms.org/component: core
     {{- include "core.labels" . | nindent 4 }}
 spec:
   clusterIP: None

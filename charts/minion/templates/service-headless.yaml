@@ -7,7 +7,6 @@ metadata:
   name: {{ include "minion.fullname" . }}-headless
   namespace: {{ .Release.Namespace }}
   labels:
-    app.opennms.org/component: minion
     {{- include "minion.labels" . | nindent 4 }}
 spec:
   clusterIP: None

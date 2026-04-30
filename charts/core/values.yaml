@@ -34,9 +34,6 @@ serviceAccount:
   # a name is generated using the fullname template.
   name: ""
 
-selectorLabels:
-  app.opennms.org/component: core
-
 podAnnotations: {}
 podLabels: {}
 
@@ -194,8 +191,11 @@ prometheus:
 # When `auth.existingSecret` is empty, the chart renders a Secret from the
 # inline values below. This lab-mode default is intended for the
 # `make test-install-core` flow against CNPG and SHOULD NOT be used in production.
+#
+# `host` MUST be set explicitly (no default) — the chart fails at template
+# time if unset. CI test values set this to the CNPG service name.
 postgresql:
-  host: cluster-helm-lint-rw.default.svc.cluster.local
+  host: ""
   port: 5432
   database: opennms
   auth:

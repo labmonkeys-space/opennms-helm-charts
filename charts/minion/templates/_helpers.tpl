@@ -1,4 +1,12 @@
 {{/*
+Minion is intentionally NOT a subchart of opennms-stack — it deploys per
+remote location, on a different release lifecycle than the central site.
+Helpers here therefore read directly from `.Values.*` with no `global.*`
+fall-through, unlike core/ and sentinel/ which support both standalone
+and umbrella installation.
+*/}}
+
+{{/*
 Expand the name of the chart.
 */}}
 {{- define "minion.name" -}}
@@ -24,6 +32,7 @@ Expand the name of the chart.
 
 {{- define "minion.labels" -}}
 helm.sh/chart: {{ include "minion.chart" . }}
+app.opennms.org/component: minion
 {{ include "minion.selectorLabels" . }}
 {{- if .Chart.AppVersion }}
 app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
@@ -95,7 +104,7 @@ envsubst initContainer — same shape as core/sentinel. Decodes "__" to "/".
     - -c
     - |
       set -eu
-      apk add --no-cache gettext >/dev/null 2>&1 || true
+      apk add --no-cache gettext >/dev/null
       for tmpl in /tmp/templates/*; do
         [ -f "$tmpl" ] || continue
         rel="$(basename "$tmpl" | sed 's|__|/|g')"

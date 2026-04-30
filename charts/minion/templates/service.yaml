@@ -3,7 +3,6 @@ kind: Service
 metadata:
   name: {{ include "minion.fullname" . }}
   labels:
-    app.opennms.org/component: minion
     {{- include "minion.labels" . | nindent 4 }}
 spec:
   type: {{ .Values.service.type }}

@@ -27,6 +27,7 @@ Create a default fully qualified app name.
 
 {{- define "sentinel.labels" -}}
 helm.sh/chart: {{ include "sentinel.chart" . }}
+app.opennms.org/component: sentinel
 {{ include "sentinel.selectorLabels" . }}
 {{- if .Chart.AppVersion }}
 app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
@@ -148,7 +149,7 @@ This helper is duplicated in core/ and minion/ — keep them in sync.
     - -c
     - |
       set -eu
-      apk add --no-cache gettext >/dev/null 2>&1 || true
+      apk add --no-cache gettext >/dev/null
       for tmpl in /tmp/templates/*; do
         [ -f "$tmpl" ] || continue
         rel="$(basename "$tmpl" | sed 's|__|/|g')"

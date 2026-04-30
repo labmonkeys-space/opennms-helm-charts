@@ -30,9 +30,6 @@ serviceAccount:
   annotations: {}
   name: ""
 
-selectorLabels:
-  app.opennms.org/component: minion
-
 podAnnotations: {}
 podLabels: {}
 

@@ -9,7 +9,6 @@ metadata:
   name: {{ include "core.fullname" . }}-confd-overlay
   namespace: {{ .Release.Namespace }}
   labels:
-    app.opennms.org/component: core
     {{- include "core.labels" . | nindent 4 }}
 data:
   horizon-config.yaml: |

@@ -5,7 +5,6 @@ metadata:
   name: {{ include "minion.fullname" . }}
   namespace: {{ .Release.Namespace }}
   labels:
-    app.opennms.org/component: minion
     {{- include "minion.labels" . | nindent 4 }}
 spec:
   replicas: {{ .Values.replicaCount }}
