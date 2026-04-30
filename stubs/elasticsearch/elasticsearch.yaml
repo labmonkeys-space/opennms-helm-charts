@@ -1,0 +1,99 @@
+---
+# Single-pod Elasticsearch in single-node mode for chart-testing only.
+# NOT a production deployment — no persistence, no auth, single-node, no
+# resource isolation guarantees.
+#
+# Pinned to ES 9.3.3 to match the version of the bluebird-community/
+# elasticsearch-drift-plugin installed by the init container below. The
+# plugin's filename embeds the ES version it targets (drift v2.2.2 ↔ ES 9.3.3),
+# so bumping the ES version requires bumping the plugin URL in lock-step.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  namespace: default
+  name: elasticsearch
+  labels:
+    app: elasticsearch
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: elasticsearch
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: elasticsearch
+    spec:
+      # fsGroup 0 + the default user (uid 1000, gid 0) lets the elasticsearch
+      # user write into the emptyDir-backed plugins/ dir at startup.
+      securityContext:
+        fsGroup: 0
+      initContainers:
+        # Download and install the drift plugin into the shared plugins/
+        # emptyDir before the runtime container starts. ES loads anything
+        # under /usr/share/elasticsearch/plugins/ at boot.
+        - name: install-drift-plugin
+          image: docker.elastic.co/elasticsearch/elasticsearch:9.3.3
+          command:
+            - /bin/sh
+            - -c
+            - |
+              set -eu
+              elasticsearch-plugin install --batch \
+                https://github.com/Bluebird-Community/elasticsearch-drift-plugin/releases/download/v2.2.2-9.3.3/elasticsearch-drift-plugin-9.3.3-2.2.2.zip
+          volumeMounts:
+            - name: plugins
+              mountPath: /usr/share/elasticsearch/plugins
+      containers:
+        - name: elasticsearch
+          image: docker.elastic.co/elasticsearch/elasticsearch:9.3.3
+          env:
+            - name: discovery.type
+              value: single-node
+            - name: xpack.security.enabled
+              value: "false"
+            - name: ES_JAVA_OPTS
+              value: "-Xms512m -Xmx512m"
+            - name: cluster.name
+              value: docker-cluster
+          ports:
+            - containerPort: 9200
+              name: rest
+            - containerPort: 9300
+              name: inter-node
+          readinessProbe:
+            httpGet:
+              path: /_cluster/health?local=true
+              port: 9200
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            failureThreshold: 12
+          resources:
+            requests:
+              cpu: 100m
+              memory: 1Gi
+            limits:
+              memory: 2Gi
+          volumeMounts:
+            - name: plugins
+              mountPath: /usr/share/elasticsearch/plugins
+      volumes:
+        - name: plugins
+          emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  namespace: default
+  name: elasticsearch
+  labels:
+    app: elasticsearch
+spec:
+  selector:
+    app: elasticsearch
+  ports:
+    - name: rest
+      port: 9200
+      targetPort: 9200
