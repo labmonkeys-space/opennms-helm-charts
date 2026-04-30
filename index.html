@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>OpenNMS Helm Charts</title>
+  <meta name="description" content="Helm charts for deploying OpenNMS Horizon Core, Sentinel, and Minion on Kubernetes against externally-managed Postgres, Kafka, and Elasticsearch.">
+  <style>
+    :root {
+      color-scheme: light dark;
+      --fg: #1a1a1a;
+      --fg-muted: #555;
+      --bg: #fafafa;
+      --accent: #2b6cb0;
+      --code-bg: #eef1f4;
+      --border: #d0d4d9;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --fg: #e6e6e6;
+        --fg-muted: #aaa;
+        --bg: #14171a;
+        --accent: #6cb2eb;
+        --code-bg: #20242a;
+        --border: #2a2f35;
+      }
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+      max-width: 56rem;
+      margin: 3rem auto;
+      padding: 0 1.5rem;
+      color: var(--fg);
+      background: var(--bg);
+      line-height: 1.55;
+    }
+    h1 { font-size: 1.9rem; margin-bottom: 0.25rem; }
+    h2 { font-size: 1.25rem; margin-top: 2.25rem; border-bottom: 1px solid var(--border); padding-bottom: 0.25rem; }
+    p.lede { color: var(--fg-muted); font-size: 1.05rem; max-width: 40rem; }
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    code, pre { font-family: "SF Mono", Menlo, Consolas, monospace; font-size: 0.92rem; }
+    pre { background: var(--code-bg); padding: 0.85rem 1rem; border-radius: 6px; overflow-x: auto; }
+    table { border-collapse: collapse; width: 100%; margin-top: 0.5rem; }
+    th, td { text-align: left; padding: 0.5rem 0.75rem; border-bottom: 1px solid var(--border); }
+    th { font-weight: 600; }
+    .charts td:first-child { font-family: "SF Mono", Menlo, Consolas, monospace; }
+    footer { margin-top: 4rem; color: var(--fg-muted); font-size: 0.9rem; border-top: 1px solid var(--border); padding-top: 1rem; }
+  </style>
+</head>
+<body>
+  <h1>OpenNMS Helm Charts</h1>
+  <p class="lede">
+    Helm charts for deploying <a href="https://www.opennms.com/horizon/">OpenNMS Horizon</a>
+    Core, Sentinel, and Minion on Kubernetes. The charts configure connectivity to
+    externally-managed Postgres, Kafka, and Elasticsearch — they do <em>not</em> deploy
+    those systems.
+  </p>
+
+  <h2>Add the repo</h2>
+  <pre>helm repo add opennms-helm-charts https://labmonkeys-space.github.io/opennms-helm-charts/
+helm repo update
+helm search repo opennms-helm-charts</pre>
+
+  <h2>Or pull via OCI</h2>
+  <pre>helm pull oci://ghcr.io/labmonkeys-space/charts/opennms-stack --version 0.1.0</pre>
+
+  <h2>Available charts</h2>
+  <table class="charts">
+    <thead>
+      <tr><th>Chart</th><th>Description</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>opennms-stack</td>
+        <td>Umbrella for the central OpenNMS site — deploys Core + Sentinel as a matched pair.</td>
+      </tr>
+      <tr>
+        <td>core</td>
+        <td>OpenNMS Horizon Core — single-replica StatefulSet with persistent RRD storage.</td>
+      </tr>
+      <tr>
+        <td>sentinel</td>
+        <td>OpenNMS Sentinel — distributed flow processor, horizontally scalable.</td>
+      </tr>
+      <tr>
+        <td>minion</td>
+        <td>OpenNMS Minion — edge collector, deployed per remote location.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h2>Documentation</h2>
+  <ul>
+    <li><a href="https://github.com/labmonkeys-space/opennms-helm-charts">GitHub repository</a> — source, issue tracker, contribution guide.</li>
+    <li><a href="https://github.com/labmonkeys-space/opennms-helm-charts/tree/main/examples">Working values.yaml examples</a> for common deployment scenarios.</li>
+    <li><a href="https://github.com/labmonkeys-space/opennms-helm-charts/blob/main/CHANGELOG.md">Changelog</a> — per-release contract.</li>
+    <li><a href="https://github.com/labmonkeys-space/opennms-helm-charts/blob/main/RELEASING.md">Releasing</a> — maintainer playbook.</li>
+    <li><a href="https://artifacthub.io/packages/search?repo=opennms-helm-charts">ArtifactHub</a> — auto-rendered chart docs and discovery.</li>
+  </ul>
+
+  <footer>
+    Apache License 2.0. Hosted on GitHub Pages from the
+    <code>gh-pages</code> branch. The
+    <a href="./index.yaml">index.yaml</a> is the file Helm clients fetch.
+  </footer>
+</body>
+</html>

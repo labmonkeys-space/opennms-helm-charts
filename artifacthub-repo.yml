@@ -1,0 +1,23 @@
+# ArtifactHub repository metadata. Once this repo is registered at
+# https://artifacthub.io and the maintainer adds the generated
+# `repositoryID` to this file, ArtifactHub marks the repository as
+# verified — chart consumers see the green check next to the listing.
+#
+# Repo registration happens once via the ArtifactHub UI:
+#   1. https://artifacthub.io → Sign in
+#   2. Control panel → Repositories → Add → Helm
+#   3. Name:  opennms-helm-charts
+#      URL:   https://labmonkeys-space.github.io/opennms-helm-charts/
+#   4. Copy the generated repositoryID into the field below.
+#   5. Trigger a verify. ArtifactHub re-fetches this file.
+
+# Uncomment and fill in once registered.
+# repositoryID: 00000000-0000-0000-0000-000000000000
+
+owners:
+  - name: indigo423
+    email: ronny@no42.org
+
+# Ignored paths (none — chart-releaser-action manages index.yaml + .tgz files
+# at the root; this html lives alongside).
+ignore: []
