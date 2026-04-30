@@ -1,0 +1,33 @@
+# Dependabot configuration.
+# Reference: https://docs.github.com/en/code-security/dependabot/dependabot-version-updates/configuration-options-for-the-dependabot.yml-file
+#
+# This repository pins GitHub Actions to immutable SHAs (per the convention
+# in CLAUDE.md). Dependabot keeps those SHA pins fresh — when an upstream
+# action releases a new version, Dependabot opens a PR that bumps the SHA
+# and updates the `# vX` comment so intent stays human-readable.
+version: 2
+
+updates:
+  # GitHub Actions used in workflows under .github/workflows/ AND in any
+  # composite actions referenced from there (.github/actions/**/action.yaml).
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "07:00"
+      timezone: "Etc/UTC"
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "ci"
+      include: "scope"
+    labels:
+      - "dependencies"
+      - "github-actions"
+    groups:
+      # Batch routine minor/patch bumps into a single PR per week. Major
+      # bumps still get individual PRs so they can be reviewed in isolation.
+      actions-minor-and-patch:
+        update-types:
+          - "minor"
+          - "patch"

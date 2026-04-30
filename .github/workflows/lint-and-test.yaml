@@ -11,21 +11,44 @@ on:
       - 'v*'  # Only version tags like v1.0.0
 
 jobs:
-  helm-lint-and-test:
+  # Fast lint pass — gates the (slower) chart-install matrix.
+  lint:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
         with:
           fetch-depth: 0
 
       - name: Setup Helm Lint Requirements
         uses: ./.github/actions/setup_helmlint
         with:
-          create-kind-cluster: "true"
+          # No kind cluster needed for lint
+          create-kind-cluster: "false"
+
+      - name: Run Chart-lint
+        run: make lint
+
+      # Pre-release drift check — fails fast on PR review when the umbrella's
+      # strict-pin subchart deps drift out of sync with the working core/
+      # and sentinel/ chart versions. Without this, the drift would only
+      # surface at release time when chart-releaser-action's own
+      # `helm dep update` fails mid-workflow.
+      - name: Verify umbrella subchart pins resolve
+        run: helm dep update charts/opennms-stack
+
+  # README regeneration — independent of lint and install. Auto-commits any
+  # diff back to the branch on push.
+  helm-docs:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+        with:
+          fetch-depth: 0
 
       - name: Run Helm Docs
-        uses: losisin/helm-docs-github-action@v1
+        uses: losisin/helm-docs-github-action@2ccf3e77eb70dc80d62f8cc26f15d0a96b75fef4  # v1.8.0
         with:
           chart-search-root: ./charts
           git-push: true
@@ -33,14 +56,34 @@ jobs:
           git-push-user-email: "twiki@labmonkeys.space"
           git-commit-message: "docs: Update Helm Readme files"
 
-      - name: Run Chart-lint
-        run: make lint
+  # One runner per chart, all installs in parallel. fail-fast: false so a
+  # single chart's failure doesn't cancel the others — full picture every run.
+  test-install:
+    needs: lint
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        chart:
+          - core
+          - minion
+          - sentinel
+          - stack
+    name: test-install-${{ matrix.chart }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+        with:
+          fetch-depth: 0
 
-      - name: Chart testing install Core chart
-        run: make test-install-core
+      - name: Setup Helm Lint Requirements
+        uses: ./.github/actions/setup_helmlint
+        with:
+          # The make targets create their own "helm-lint" kind cluster via
+          # `make kind-create`. Don't let setup_helmlint create a redundant
+          # "chart-testing" cluster that just sits idle and steals ~1.5GB RAM
+          # the chart pods could use for slow-starting Karaf-based services.
+          create-kind-cluster: "false"
 
-      - name: Chart testing install Minion chart
-        run: make test-install-minion
-
-      - name: Chart testing install Sentinel chart
-        run: make test-install-sentinel
+      - name: Chart testing install ${{ matrix.chart }} chart
+        run: make test-install-${{ matrix.chart }}
