@@ -1,0 +1,62 @@
+---
+# ConfigMap of placeholder .cfg / .properties files. The envsubst init container
+# renders these into /opt/opennms-etc-overlay/etc/ where the upstream entrypoint's
+# applyOverlayConfig step picks them up.
+#
+# Natural POSIX paths under etc/ are kept in the `$files` dict below; the
+# ConfigMap data keys are encoded by replacing "/" with "__" at the very last
+# step. The init container decodes the same way at pod start, so subpath
+# placement under etc/ works transparently.
+#
+# Adding a new chart-managed file: add an entry to $files. Adding a user-
+# supplied file: set `extraConfigFiles."<posix-path>": <content>` in values.
+
+{{- $files := dict -}}
+
+{{- $_ := set $files "opennms.properties.d/instance-id.properties" (printf "org.opennms.instance.id=%s\n" (include "core.instanceId" .)) -}}
+
+{{- if include "core.kafkaBootstrap" . -}}
+{{- $kafkaCfg := include "core.kafkaCfgBlock" . -}}
+{{- $_ := set $files "org.opennms.core.ipc.sink.kafka.cfg" $kafkaCfg -}}
+{{- $_ := set $files "org.opennms.core.ipc.rpc.kafka.cfg" $kafkaCfg -}}
+{{- $_ := set $files "org.opennms.core.ipc.twin.kafka.cfg" $kafkaCfg -}}
+{{- end }}
+
+{{- if .Values.elasticsearch.enabled }}
+{{- $esCfg := printf "elasticUrl=%s\nelasticIndexStrategy=%s\n" .Values.elasticsearch.url .Values.elasticsearch.indexStrategy -}}
+{{- if .Values.elasticsearch.auth.existingSecret -}}
+{{- $esCfg = printf "%selasticUser=${ELASTIC_USERNAME}\nelasticPassword=${ELASTIC_PASSWORD}\n" $esCfg -}}
+{{- end -}}
+{{- $_ := set $files "org.opennms.features.flows.persistence.elastic.cfg" $esCfg -}}
+{{- end }}
+
+{{- if .Values.prometheusRemoteWriter.enabled }}
+{{- $prwCfg := printf "write.url=%s\n" (required "prometheusRemoteWriter.writeUrl is required when prometheusRemoteWriter.enabled" .Values.prometheusRemoteWriter.writeUrl) -}}
+{{- if .Values.prometheusRemoteWriter.readUrl -}}
+{{- $prwCfg = printf "%sread.url=%s\n" $prwCfg .Values.prometheusRemoteWriter.readUrl -}}
+{{- end -}}
+{{- if .Values.prometheusRemoteWriter.auth.existingSecret -}}
+{{- $prwCfg = printf "%sauth.basic.username=${PRW_USERNAME}\nauth.basic.password=${PRW_PASSWORD}\n" $prwCfg -}}
+{{- end -}}
+{{- $_ := set $files "org.opennms.plugins.tss.prometheus-remote-writer.cfg" $prwCfg -}}
+{{- $_ := set $files "opennms.properties.d/timeseries.properties" "org.opennms.timeseries.strategy = integration\n" -}}
+{{- end }}
+
+{{- /* User-supplied additions / overrides. Keys are natural POSIX paths
+       relative to etc/. */ -}}
+{{- range $path, $content := .Values.extraConfigFiles -}}
+{{- $_ := set $files $path $content -}}
+{{- end }}
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "core.fullname" . }}-config-templates
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "core.labels" . | nindent 4 }}
+data:
+  {{- range $path, $content := $files }}
+  {{ $path | replace "/" "__" }}: |
+{{ $content | indent 4 }}
+  {{- end }}

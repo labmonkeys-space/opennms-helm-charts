@@ -1,0 +1,9 @@
+dependencies:
+- name: core
+  repository: file://../core
+  version: 0.1.0
+- name: sentinel
+  repository: file://../sentinel
+  version: 0.1.0
+digest: sha256:be580b4b55fe33b4a60d44ba2a669815f6695dff5142f318ac4fb8e4cdd8ec69
+generated: "2026-04-30T17:32:36.454027+02:00"

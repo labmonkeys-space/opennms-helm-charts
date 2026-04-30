@@ -1,0 +1,23 @@
+---
+# Headless Service required by the StatefulSet's `serviceName` field.
+# Provides stable per-pod DNS records (e.g. <release>-core-0.<release>-core-headless.<ns>.svc).
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "core.fullname" . }}-headless
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "core.labels" . | nindent 4 }}
+spec:
+  clusterIP: None
+  selector:
+    {{- include "core.selectorLabels" . | nindent 4 }}
+  ports:
+    - name: webui
+      port: {{ .Values.service.webui.port }}
+      targetPort: webui
+      protocol: TCP
+    - name: karaf
+      port: {{ .Values.service.karaf.port }}
+      targetPort: karaf
+      protocol: TCP

@@ -1,0 +1,10 @@
+# Values for chart-testing (`ct install --charts charts/minion`).
+# Wires Minion against the in-cluster Kafka stub.
+
+location: ci-test
+kafka:
+  bootstrapServers: kafka.default.svc.cluster.local:9092
+
+# Disable per-replica PVCs — kind has no default storage class.
+persistence:
+  enabled: false

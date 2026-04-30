@@ -1,22 +1,39 @@
 ---
 apiVersion: apps/v1
-kind: Deployment
+kind: StatefulSet
 metadata:
-  name: {{ include "sentinel.fullname" . }}
+  name: {{ include "minion.fullname" . }}
   namespace: {{ .Release.Namespace }}
   labels:
-    {{- include "sentinel.labels" . | nindent 4 }}
+    {{- include "minion.labels" . | nindent 4 }}
 spec:
-  {{- if not .Values.autoscaling.enabled }}
   replicas: {{ .Values.replicaCount }}
-  {{- end }}
+  serviceName: {{ include "minion.fullname" . }}-headless
   selector:
     matchLabels:
-      {{- include "sentinel.selectorLabels" . | nindent 6 }}
+      {{- include "minion.selectorLabels" . | nindent 6 }}
+  {{- if .Values.persistence.enabled }}
+  volumeClaimTemplates:
+    - metadata:
+        name: minion-data
+        {{- with .Values.persistence.annotations }}
+        annotations:
+          {{- toYaml . | nindent 10 }}
+        {{- end }}
+      spec:
+        accessModes:
+          - {{ .Values.persistence.accessMode | quote }}
+        {{- if .Values.persistence.storageClassName }}
+        storageClassName: {{ .Values.persistence.storageClassName | quote }}
+        {{- end }}
+        resources:
+          requests:
+            storage: {{ .Values.persistence.size | quote }}
+  {{- end }}
   template:
     metadata:
       labels:
-        {{- include "sentinel.selectorLabels" . | nindent 8 }}
+        {{- include "minion.selectorLabels" . | nindent 8 }}
         {{- with .Values.podLabels }}
         {{- toYaml . | nindent 8 }}
         {{- end }}
@@ -29,24 +46,24 @@ spec:
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}
       {{- end }}
-      serviceAccountName: {{ include "sentinel.serviceAccountName" . }}
+      serviceAccountName: {{ include "minion.serviceAccountName" . }}
       {{- with .Values.podSecurityContext }}
       securityContext:
         {{- toYaml . | nindent 8 }}
       {{- end }}
       initContainers:
-        {{- include "sentinel.envsubstInitContainer" . | nindent 8 }}
+        {{- include "minion.envsubstInitContainer" . | nindent 8 }}
       containers:
         - name: {{ .Chart.Name }}
-          image: {{ include "sentinel.image" . | quote }}
+          image: {{ include "minion.image" . | quote }}
           imagePullPolicy: {{ .Values.image.pullPolicy | quote }}
           args:
-            - {{ include "sentinel.startupArg" . }}
+            - {{ include "minion.startupArg" . }}
           env:
-            {{- include "sentinel.runtimeEnv" . | nindent 12 }}
+            {{- include "minion.runtimeEnv" . | nindent 12 }}
           ports:
             - name: karaf
-              containerPort: 8301
+              containerPort: 8201
               protocol: TCP
             {{- if .Values.prometheus.jmxExporter.enabled }}
             - name: prom-jmx
@@ -71,22 +88,28 @@ spec:
           {{- end }}
           volumeMounts:
             - name: confd-overlay
-              mountPath: /opt/sentinel/sentinel-config.yaml
-              subPath: sentinel-config.yaml
+              mountPath: /opt/minion/minion-config.yaml
+              subPath: minion-config.yaml
             - name: etc-overlay
-              mountPath: /opt/sentinel-etc-overlay
+              mountPath: /opt/minion-etc-overlay
+            - name: minion-data
+              mountPath: /opt/minion/data
             {{- with .Values.volumeMounts }}
             {{- toYaml . | nindent 12 }}
             {{- end }}
       volumes:
         - name: config-templates
           configMap:
-            name: {{ include "sentinel.fullname" . }}-config-templates
+            name: {{ include "minion.fullname" . }}-config-templates
         - name: confd-overlay
           configMap:
-            name: {{ include "sentinel.fullname" . }}-confd-overlay
+            name: {{ include "minion.fullname" . }}-confd-overlay
         - name: etc-overlay
           emptyDir: {}
+        {{- if not .Values.persistence.enabled }}
+        - name: minion-data
+          emptyDir: {}
+        {{- end }}
         {{- with .Values.volumes }}
         {{- toYaml . | nindent 8 }}
         {{- end }}

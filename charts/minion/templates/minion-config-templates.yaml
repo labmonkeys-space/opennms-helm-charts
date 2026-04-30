@@ -1,0 +1,61 @@
+---
+# ConfigMap of placeholder .cfg / .properties / .boot files. The envsubst init
+# container renders these into /opt/minion-etc-overlay/etc/ where the upstream
+# entrypoint's applyOverlayConfig step picks them up.
+#
+# Natural POSIX paths under etc/ are kept in the `$files` dict below; the
+# ConfigMap data keys are encoded by replacing "/" with "__" at the very last
+# step. The init container decodes the same way at pod start, so subpath
+# placement under etc/ works transparently.
+#
+# Adding a new chart-managed file: add an entry to $files. Adding a user-
+# supplied file: set `extraConfigFiles."<posix-path>": <content>` in values.
+
+{{- $files := dict -}}
+
+{{- /* Instance ID — read by OpenNMS's properties scanner under .d/ */ -}}
+{{- $_ := set $files "opennms.properties.d/instance-id.properties" (printf "org.opennms.instance.id=%s\n" .Values.instanceId) -}}
+
+{{- /* Minion controller cfg — id and location substituted by envsubst at pod start */ -}}
+{{- $_ := set $files "org.opennms.minion.controller.cfg" "id = ${MINION_ID}\nlocation = ${MINION_LOCATION}\n" -}}
+
+{{- /* Override the upstream image's secure default of sshHost=127.0.0.1.
+       Without this, Karaf SSH binds loopback only and the chart's Service
+       (and helm-test connection pod) can't reach port 8201 via the pod IP.
+       Sentinel's image entrypoint makes the same change at runtime; Minion's
+       image doesn't, so we patch it in the etc-overlay. */ -}}
+{{- $_ := set $files "org.apache.karaf.shell.cfg" "sshPort=8201\nsshHost=0.0.0.0\nhostKeyFormat=PEM\nsshRealm=karaf\nhostKey=${karaf.etc}/host.key\n" -}}
+
+{{- if .Values.kafka.bootstrapServers }}
+{{- /* Kafka IPC config + featuresBoot files — disable JMS, enable Kafka.
+       The .boot files MUST land in featuresBoot.d/ (not etc/ root) for Karaf
+       to pick them up at boot. */ -}}
+{{- $kafkaCfg := include "minion.kafkaCfgBlock" . -}}
+{{- $_ := set $files "org.opennms.core.ipc.sink.kafka.cfg" $kafkaCfg -}}
+{{- $_ := set $files "org.opennms.core.ipc.rpc.kafka.cfg" $kafkaCfg -}}
+{{- $_ := set $files "org.opennms.core.ipc.twin.kafka.cfg" $kafkaCfg -}}
+{{- $_ := set $files "featuresBoot.d/kafka-ipc.boot" "!minion-jms\n!opennms-core-ipc-jms\nopennms-core-ipc-kafka\n" -}}
+{{- $_ := set $files "featuresBoot.d/kafka-rpc.boot" "!opennms-core-ipc-rpc-jms\nopennms-core-ipc-rpc-kafka\n" -}}
+{{- $_ := set $files "featuresBoot.d/kafka-sink.boot" "!opennms-core-ipc-sink-camel\nopennms-core-ipc-sink-kafka\n" -}}
+{{- $_ := set $files "featuresBoot.d/kafka-twin.boot" "!opennms-core-ipc-twin-jms\nopennms-core-ipc-twin-kafka\n" -}}
+{{- end }}
+
+{{- /* User-supplied additions / overrides. Keys are natural POSIX paths
+       relative to etc/. The chart's encoded keys above will be overridden
+       if the user sets the same path. */ -}}
+{{- range $path, $content := .Values.extraConfigFiles -}}
+{{- $_ := set $files $path $content -}}
+{{- end }}
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "minion.fullname" . }}-config-templates
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "minion.labels" . | nindent 4 }}
+data:
+  {{- range $path, $content := $files }}
+  {{ $path | replace "/" "__" }}: |
+{{ $content | indent 4 }}
+  {{- end }}

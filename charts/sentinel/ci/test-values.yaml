@@ -1,0 +1,17 @@
+# Values for chart-testing (`ct install --charts charts/sentinel`).
+#
+# ct creates an ephemeral random namespace per release. Kubernetes Secret
+# references cannot cross namespaces, so we cannot use the existingSecret
+# pattern in ct testing — the Secret would live in `default` but the pod
+# would live in the random namespace. For ct purposes the chart's
+# Karaf-port smoke test is the assertion; Postgres/ES connectivity is
+# validated separately.
+
+postgresql:
+  host: cluster-helm-lint-rw.default.svc.cluster.local
+  # No existingSecret — Sentinel skips rendering datasource.cfg in this case.
+  # Karaf still boots enough for the karaf-port smoke test to pass.
+kafka:
+  bootstrapServers: kafka.default.svc.cluster.local:9092
+elasticsearch:
+  url: http://elasticsearch.default.svc.cluster.local:9200

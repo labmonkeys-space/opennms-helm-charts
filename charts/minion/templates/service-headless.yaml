@@ -1,0 +1,19 @@
+---
+# Headless Service required by the StatefulSet's `serviceName` field.
+# Provides stable per-pod DNS records (e.g. <release>-minion-0.<release>-minion-headless.<ns>.svc).
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "minion.fullname" . }}-headless
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "minion.labels" . | nindent 4 }}
+spec:
+  clusterIP: None
+  selector:
+    {{- include "minion.selectorLabels" . | nindent 4 }}
+  ports:
+    - name: karaf
+      port: {{ .Values.service.karaf.port }}
+      targetPort: karaf
+      protocol: TCP

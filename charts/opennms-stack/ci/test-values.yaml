@@ -1,0 +1,40 @@
+# Values for chart-testing (`ct install --charts charts/opennms-stack`).
+#
+# ct creates an ephemeral random namespace per release. Kubernetes Secret
+# references cannot cross namespaces, so we cannot use the existingSecret
+# pattern here — the Secret would live in `default` (where the stubs go) but
+# the pods would live in the random namespace.
+#
+# For ct testing we therefore exercise Core's lab-mode (chart-managed Secret
+# co-located with the release). Sentinel skips its datasource.cfg when no
+# existingSecret is configured; Karaf still boots enough for the karaf-port
+# smoke test to pass. Production deployments use the existingSecret path —
+# see the chart README and CONTRIBUTING.md.
+
+global:
+  postgresql:
+    host: cluster-helm-lint-rw.default.svc.cluster.local
+    # No existingSecret here — Core renders a lab-mode Secret with the
+    # inline credentials set under `core.postgresql.auth.*` below.
+  kafka:
+    bootstrapServers: kafka.default.svc.cluster.local:9092
+  elasticsearch:
+    url: http://elasticsearch.default.svc.cluster.local:9200
+
+core:
+  postgresql:
+    auth:
+      # Lab-mode credentials matching the CNPG superuser/db set up by
+      # `make install-postgres`.
+      superuserName: postgres
+      superuserPassword: Change_Me_Postgres
+      username: opennms_dba
+      password: Change_Me_OpenNMS_DBA
+  # Skip the 50Gi PVC in kind — no default storage class.
+  persistence:
+    enabled: false
+
+sentinel:
+  replicaCount: 1
+  # No HTTP/broker existingSecret → Sentinel starts in `-f` mode (no SCV
+  # registration). Sufficient for the karaf-port smoke test.

@@ -3,6 +3,7 @@ apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler
 metadata:
   name: {{ include "sentinel.fullname" . }}
+  namespace: {{ .Release.Namespace }}
   labels:
     {{- include "sentinel.labels" . | nindent 4 }}
 spec:

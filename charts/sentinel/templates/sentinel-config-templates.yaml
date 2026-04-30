@@ -1,0 +1,54 @@
+---
+# ConfigMap of placeholder .cfg / .properties files. The envsubst init container
+# renders these into /opt/sentinel-etc-overlay/etc/ where the upstream
+# entrypoint's applyOverlayConfig step picks them up.
+#
+# Natural POSIX paths under etc/ are kept in the `$files` dict below; the
+# ConfigMap data keys are encoded by replacing "/" with "__" at the very last
+# step. The init container decodes the same way at pod start, so subpath
+# placement under etc/ works transparently.
+#
+# Adding a new chart-managed file: add an entry to $files. Adding a user-
+# supplied file: set `extraConfigFiles."<posix-path>": <content>` in values.
+
+{{- $files := dict -}}
+
+{{- $_ := set $files "opennms.properties.d/instance-id.properties" (printf "org.opennms.instance.id=%s\n" (include "sentinel.instanceId" .)) -}}
+
+{{- if include "sentinel.kafkaBootstrap" . -}}
+{{- $_ := set $files "org.opennms.core.ipc.sink.kafka.cfg" (include "sentinel.kafkaCfgBlock" .) -}}
+{{- end -}}
+
+{{- $pgSecret := include "sentinel.postgresExistingSecret" . -}}
+{{- if $pgSecret }}
+{{- $datasourceCfg := printf "datasource.url=jdbc:postgresql://%s:%s/%s\ndatasource.username=${OPENNMS_DBUSER}\ndatasource.password=${OPENNMS_DBPASS}\ndatasource.databaseName=%s\n" (include "sentinel.postgresHost" .) (include "sentinel.postgresPort" .) (include "sentinel.postgresDatabase" .) (include "sentinel.postgresDatabase" .) -}}
+{{- $_ := set $files "org.opennms.netmgt.distributed.datasource.cfg" $datasourceCfg -}}
+{{- end }}
+
+{{- if .Values.elasticsearch.enabled }}
+{{- $esCfg := printf "elasticUrl=%s\nelasticIndexStrategy=%s\nsettings.index.number_of_replicas=%v\nconnTimeout=%v\nreadTimeout=%v\n" (include "sentinel.elasticsearchUrl" .) .Values.elasticsearch.indexStrategy .Values.elasticsearch.replicas .Values.elasticsearch.connTimeout .Values.elasticsearch.readTimeout -}}
+{{- $esSecret := include "sentinel.elasticsearchExistingSecret" . -}}
+{{- if $esSecret -}}
+{{- $esCfg = printf "%selasticUser=${ELASTIC_USERNAME}\nelasticPassword=${ELASTIC_PASSWORD}\n" $esCfg -}}
+{{- end -}}
+{{- $_ := set $files "org.opennms.features.flows.persistence.elastic.cfg" $esCfg -}}
+{{- end }}
+
+{{- /* User-supplied additions / overrides. Keys are natural POSIX paths
+       relative to etc/. */ -}}
+{{- range $path, $content := .Values.extraConfigFiles -}}
+{{- $_ := set $files $path $content -}}
+{{- end }}
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "sentinel.fullname" . }}-config-templates
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "sentinel.labels" . | nindent 4 }}
+data:
+  {{- range $path, $content := $files }}
+  {{ $path | replace "/" "__" }}: |
+{{ $content | indent 4 }}
+  {{- end }}
