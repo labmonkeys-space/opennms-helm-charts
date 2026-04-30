@@ -1,0 +1,61 @@
+name: release
+
+# Tag-push triggers a release event. The tag's version tracks the umbrella's
+# chart version (since the umbrella's strict-pinned matched-pair invariant
+# makes it the natural release marker for the stack as a whole).
+#
+#   git tag v0.1.0 && git push origin v0.1.0
+#
+# Both publish targets are written to: GitHub Pages (Helm repo) and GHCR (OCI).
+# See RELEASING.md for the full operator playbook.
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write    # chart-releaser-action: create Releases, push gh-pages
+      packages: write    # helm push: GHCR OCI artifacts
+      id-token: write    # reserved for future cosign keyless signing
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+        with:
+          fetch-depth: 0
+
+      - name: Configure Git identity
+        run: |
+          git config user.name "GitHub Action"
+          git config user.email "twiki@labmonkeys.space"
+
+      - name: Set up Helm
+        uses: azure/setup-helm@1a275c3b69536ee54be43f2070a358922e12c8d4  # v4.3.1
+
+      # GH Pages leg — packages every chart whose Chart.yaml version is not yet
+      # published, creates GitHub Releases, attaches .tgz, updates index.yaml on
+      # the gh-pages branch. The action handles helm-dep-update for the umbrella.
+      - name: Run chart-releaser
+        uses: helm/chart-releaser-action@cae68fefc6b5f367a0275617c9f83181ba54714f  # v1.7.0
+        env:
+          CR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          charts_dir: charts
+
+      # OCI leg — push every newly-packaged .tgz to GHCR. chart-releaser writes
+      # only the deltas to .cr-release-packages/, so this is a no-op when no
+      # version has changed (the for-loop iterates over zero files).
+      - name: Login to GHCR
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | helm registry login ghcr.io -u "${{ github.actor }}" --password-stdin
+
+      - name: Push packaged charts to GHCR
+        run: |
+          set -eu
+          shopt -s nullglob
+          for tgz in .cr-release-packages/*.tgz; do
+            echo "Pushing $tgz → oci://ghcr.io/${{ github.repository_owner }}/charts"
+            helm push "$tgz" "oci://ghcr.io/${{ github.repository_owner }}/charts"
+          done
+        shell: bash
