@@ -1,0 +1,15 @@
+annotations:
+  artifacthub.io/category: networking
+  artifacthub.io/license: Apache-2.0
+  artifacthub.io/links: |
+    - name: GitHub repository
+      url: https://github.com/labmonkeys-space/opennms-helm-charts
+    - name: OpenNMS Horizon
+      url: https://www.opennms.com/horizon/
+    - name: OpenNMS documentation
+      url: https://docs.opennms.com/
+  artifacthub.io/changes: |
+    - kind: added
+      description: First published release. OpenNMS Sentinel 35.0.5 — distributed flow processor for the central OpenNMS site.
+  artifacthub.io/operator: "false"
+  artifacthub.io/prerelease: "false"

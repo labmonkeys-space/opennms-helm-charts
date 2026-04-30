@@ -1,0 +1,67 @@
+# OpenNMS stack — production install with BYO infrastructure AND time-series
+# data forwarded to a Prometheus-compatible backend (Mimir, Cortex, Thanos,
+# VictoriaMetrics, or plain Prometheus with remote-write-receiver enabled).
+#
+# Builds on opennms-stack-prod-byo.yaml; only the Core overrides differ.
+#
+# Additional Secret prerequisite (only when Mimir/Cortex requires basic auth):
+#
+#   Secret: prw-credentials
+#     Type: Opaque
+#     Keys: PRW_USERNAME, PRW_PASSWORD
+#
+# When the backend uses bearer-token or anonymous access, omit
+# `prometheusRemoteWriter.auth.existingSecret`.
+#
+# The chart downloads the opennms-forge/prometheus-remote-writer KAR into
+# /opt/opennms-overlay/deploy at pod start and switches the time-series
+# strategy from "rrd" to "integration" automatically. Air-gapped clusters
+# can override `prometheusRemoteWriter.kar.url` to an internal mirror.
+
+global:
+  instanceId: OpenNMS
+
+  postgresql:
+    host: postgres.db.svc.cluster.local
+    port: 5432
+    database: opennms
+    auth:
+      existingSecret: opennms-postgres
+
+  kafka:
+    bootstrapServers: "kafka-0.kafka-headless.kafka.svc.cluster.local:9092"
+
+  elasticsearch:
+    url: http://elasticsearch.flows.svc.cluster.local:9200
+    auth:
+      existingSecret: opennms-elastic
+
+core:
+  persistence:
+    # RRD writes still happen locally; the volume is smaller because Prometheus
+    # remote-write is the long-term retention. Keep enough for ~1 week buffer.
+    enabled: true
+    size: 20Gi
+
+  prometheusRemoteWriter:
+    enabled: true
+    version: "0.3.2"
+    writeUrl: https://mimir.observability.example.com/api/v1/push
+    readUrl: https://mimir.observability.example.com/prometheus
+    auth:
+      existingSecret: prw-credentials
+
+  resources:
+    requests:
+      cpu: 1
+      memory: 4Gi
+    limits:
+      memory: 8Gi
+
+sentinel:
+  replicaCount: 2
+  opennms:
+    http:
+      existingSecret: opennms-http
+    broker:
+      existingSecret: opennms-broker

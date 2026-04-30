@@ -75,6 +75,14 @@ stubs/
 openspec/              change proposals and specs (see openspec/AGENTS.md)
 ```
 
+### Examples
+
+Working `values.yaml` recipes for common scenarios (production BYO, Mimir-backed time-series, edge Minion) live under [`examples/`](examples/).
+
+### Changelog
+
+See [`CHANGELOG.md`](CHANGELOG.md) for the per-release contract.
+
 ### Releasing
 
 Maintainers cut releases by pushing a `v*` tag on `main`. See [`RELEASING.md`](RELEASING.md) for the full operator playbook (release-PR checklist, tag procedure, first-time repo bootstrap, yanking).

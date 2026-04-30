@@ -1,0 +1,76 @@
+# OpenNMS stack — production-style install with BYO infrastructure.
+#
+# Prerequisites in the install namespace:
+#
+#   Secret: opennms-postgres
+#     Type: Opaque
+#     Keys: POSTGRES_USER, POSTGRES_PASSWORD, OPENNMS_DBUSER, OPENNMS_DBPASS
+#
+#   Secret: opennms-elastic
+#     Type: Opaque
+#     Keys: ELASTIC_USERNAME, ELASTIC_PASSWORD
+#
+#   Secret: opennms-http
+#     Type: Opaque
+#     Keys: OPENNMS_HTTP_USER, OPENNMS_HTTP_PASS
+#
+#   Secret: opennms-broker
+#     Type: Opaque
+#     Keys: OPENNMS_BROKER_USER, OPENNMS_BROKER_PASS
+#
+# Plus reachable Postgres, Kafka, and Elasticsearch endpoints — the chart
+# does NOT deploy any of those.
+#
+# Install:
+#   helm install onms opennms-helm-charts/opennms-stack \
+#     --version 0.1.0 \
+#     -f examples/opennms-stack-prod-byo.yaml
+
+global:
+  instanceId: OpenNMS
+
+  postgresql:
+    host: postgres.db.svc.cluster.local
+    port: 5432
+    database: opennms
+    auth:
+      existingSecret: opennms-postgres
+
+  kafka:
+    bootstrapServers: "kafka-0.kafka-headless.kafka.svc.cluster.local:9092,kafka-1.kafka-headless.kafka.svc.cluster.local:9092,kafka-2.kafka-headless.kafka.svc.cluster.local:9092"
+
+  elasticsearch:
+    url: http://elasticsearch.flows.svc.cluster.local:9200
+    auth:
+      existingSecret: opennms-elastic
+
+core:
+  persistence:
+    enabled: true
+    size: 100Gi
+    # storageClassName: ""  # cluster default
+  resources:
+    requests:
+      cpu: 1
+      memory: 4Gi
+    limits:
+      memory: 8Gi
+
+sentinel:
+  replicaCount: 2
+  autoscaling:
+    enabled: true
+    minReplicas: 2
+    maxReplicas: 6
+    targetCPUUtilizationPercentage: 75
+  opennms:
+    http:
+      existingSecret: opennms-http
+    broker:
+      existingSecret: opennms-broker
+  resources:
+    requests:
+      cpu: 500m
+      memory: 2Gi
+    limits:
+      memory: 4Gi

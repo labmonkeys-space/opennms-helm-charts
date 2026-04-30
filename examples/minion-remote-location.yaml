@@ -1,0 +1,65 @@
+# Minion deployed to a remote location, talking to a central OpenNMS over
+# Kafka. Install once per remote site — different release name + different
+# `location` value each time.
+#
+# Prerequisites in the install namespace:
+#
+#   Secret: opennms-http
+#     Type: Opaque
+#     Keys: OPENNMS_HTTP_USER, OPENNMS_HTTP_PASS
+#
+#   Secret: opennms-broker
+#     Type: Opaque
+#     Keys: OPENNMS_BROKER_USER, OPENNMS_BROKER_PASS
+#
+#   Secret: kafka-sasl  (only when kafka.auth.enabled = true)
+#     Type: Opaque
+#     Keys: KAFKA_USERNAME, KAFKA_PASSWORD
+#
+# Install:
+#   helm install minion-nyc opennms-helm-charts/minion \
+#     --version 0.1.0 \
+#     -f examples/minion-remote-location.yaml \
+#     --set location=nyc
+
+# REQUIRED: matches the location identifier registered with Core.
+# Override at install time per site (the chart fails template-time if unset).
+location: nyc
+
+# org.opennms.instance.id — must match the central OpenNMS Core / Sentinel.
+instanceId: OpenNMS
+
+# Per-replica Karaf state. For a single-Minion location, replicaCount: 1 is
+# fine. For HA at one location, raise to 2 or 3 — each pod gets a stable
+# id (minion-nyc-0, minion-nyc-1, …) and registers separately with Core.
+replicaCount: 1
+
+persistence:
+  enabled: true
+  size: 1Gi
+
+# BYO Kafka. Bootstrap servers reachable from the remote location's network.
+kafka:
+  bootstrapServers: "kafka-public.example.com:9092"
+  auth:
+    enabled: true
+    mechanism: SCRAM-SHA-512
+    existingSecret: kafka-sasl
+  tls:
+    enabled: true
+    existingSecret: kafka-tls   # ca.crt (and client.crt/client.key for mTLS)
+
+# Credentials used to register the Minion with Core's REST API and broker.
+opennms:
+  http:
+    existingSecret: opennms-http
+  broker:
+    existingSecret: opennms-broker
+
+# Sensible resource floor for a Minion polling a typical edge site.
+resources:
+  requests:
+    cpu: 500m
+    memory: 2Gi
+  limits:
+    memory: 3Gi

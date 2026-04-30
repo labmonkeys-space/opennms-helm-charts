@@ -1,0 +1,18 @@
+# ArtifactHub chart metadata. Bundled into the .tgz at package time and
+# rendered by https://artifacthub.io alongside the chart README.
+annotations:
+  artifacthub.io/category: networking
+  artifacthub.io/license: Apache-2.0
+  artifacthub.io/links: |
+    - name: GitHub repository
+      url: https://github.com/labmonkeys-space/opennms-helm-charts
+    - name: OpenNMS Horizon
+      url: https://www.opennms.com/horizon/
+    - name: OpenNMS documentation
+      url: https://docs.opennms.com/
+  artifacthub.io/changes: |
+    - kind: added
+      description: First published release. OpenNMS Horizon Core 35.0.5 with BYO Postgres + Kafka + optional Elasticsearch.
+  artifacthub.io/operator: "false"
+  artifacthub.io/prerelease: "false"
+  artifacthub.io/containsSecurityUpdates: "false"
