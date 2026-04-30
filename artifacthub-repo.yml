@@ -11,8 +11,7 @@
 #   4. Copy the generated repositoryID into the field below.
 #   5. Trigger a verify. ArtifactHub re-fetches this file.
 
-# Uncomment and fill in once registered.
-# repositoryID: 00000000-0000-0000-0000-000000000000
+repositoryID: ad7c3085-6507-4442-9bcf-a9c39240c2dd
 
 owners:
   - name: indigo423
