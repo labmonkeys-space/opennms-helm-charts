@@ -1,0 +1,70 @@
+# OpenNMS Core deployed standalone — without the Sentinel sibling.
+#
+# When to pick this over `opennms-stack-prod-byo.yaml`:
+#
+#   • Small-to-medium deployments where flow processing volume doesn't
+#     justify a separate Sentinel.
+#   • Lab / staging environments.
+#   • You already have flow processing handled elsewhere.
+#
+# An equivalent shape — installable via the umbrella — is:
+#
+#   helm install onms opennms-helm-charts/opennms-stack \
+#     --set sentinel.enabled=false \
+#     -f examples/opennms-stack-prod-byo.yaml
+#
+# That path is useful if you anticipate enabling Sentinel later without
+# changing your release name. The example below installs the `core` chart
+# directly, which is one less moving part for "Core only" deployments.
+#
+# Prerequisites in the install namespace:
+#
+#   Secret: opennms-postgres
+#     Type: Opaque
+#     Keys: POSTGRES_USER, POSTGRES_PASSWORD, OPENNMS_DBUSER, OPENNMS_DBPASS
+#
+#   Secret: kafka-sasl  (only when kafka.auth.enabled = true)
+#     Type: Opaque
+#     Keys: KAFKA_USERNAME, KAFKA_PASSWORD
+#
+# Plus a reachable Postgres instance, and (only if you have Minions) a
+# reachable Kafka cluster. The chart does NOT deploy either.
+#
+# Install:
+#   helm install onms opennms-helm-charts/core \
+#     --version 0.1.0 \
+#     -f examples/core-standalone.yaml
+
+postgresql:
+  host: postgres.db.svc.cluster.local
+  port: 5432
+  database: opennms
+  auth:
+    existingSecret: opennms-postgres
+
+# Kafka is only needed if you have Minions reporting to this Core.
+# Leave bootstrapServers empty for a fully isolated Core (no Minions).
+kafka:
+  bootstrapServers: "kafka-0.kafka-headless.kafka.svc.cluster.local:9092"
+  # auth:
+  #   enabled: true
+  #   mechanism: SCRAM-SHA-512
+  #   existingSecret: kafka-sasl
+
+# Elasticsearch flow persistence is typically Sentinel's job. With no
+# Sentinel in the picture, leaving this off is the common case. Enable
+# only if you persist flows directly from Core (uncommon).
+elasticsearch:
+  enabled: false
+
+persistence:
+  enabled: true
+  size: 100Gi
+  # storageClassName: ""  # cluster default
+
+resources:
+  requests:
+    cpu: 1
+    memory: 4Gi
+  limits:
+    memory: 8Gi

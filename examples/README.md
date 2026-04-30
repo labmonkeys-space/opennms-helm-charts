@@ -10,6 +10,7 @@ chart repo or OCI artifacts.
 | --------------------------------------------- | ---------------- | ------------------------------------------------------------------ |
 | [`opennms-stack-prod-byo.yaml`](opennms-stack-prod-byo.yaml)         | `opennms-stack`  | Production-style central-site install with all credentials provided via `existingSecret` references |
 | [`opennms-stack-with-prometheus.yaml`](opennms-stack-with-prometheus.yaml) | `opennms-stack`  | Same as above plus the `prometheus-remote-writer` plugin pointing at a Mimir/Cortex/VictoriaMetrics backend |
+| [`core-standalone.yaml`](core-standalone.yaml)               | `core`           | OpenNMS Core deployed by itself — no Sentinel sibling. For small-to-medium deployments or labs where dedicated flow processing isn't needed. |
 | [`minion-remote-location.yaml`](minion-remote-location.yaml)         | `minion`         | A Minion deployed to a remote site, talking to a central OpenNMS over BYO Kafka |
 
 ## Using an example
