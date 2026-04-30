@@ -1,14 +1,24 @@
 ---
+# Non-secret env vars consumed by the OpenNMS Core entrypoint and Java installer.
+# Mounted via envFrom on the runtime container.
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: core-configmap
+  name: {{ include "core.fullname" . }}-env
   namespace: {{ .Release.Namespace }}
   labels:
     app.opennms.org/component: core
     {{- include "core.labels" . | nindent 4 }}
 data:
   TZ: {{ .Values.timezone | default "UTC" | quote }}
-  OPENNMS_DBNAME: {{ .Values.postgresql.opennmsDbName | quote }}
-  POSTGRES_HOST: {{ .Values.postgresql.host | quote }}
-  POSTGRES_PORT: {{ .Values.postgresql.port | quote }}
+  OPENNMS_DBNAME: {{ include "core.postgresDatabase" . | quote }}
+  POSTGRES_HOST: {{ include "core.postgresHost" . | quote }}
+  POSTGRES_PORT: {{ include "core.postgresPort" . | quote }}
+  OPENNMS_TIMESERIES_STRATEGY: {{ include "core.timeseriesStrategy" . | quote }}
+  {{- if .Values.javaOpts }}
+  JAVA_OPTS: {{ .Values.javaOpts | quote }}
+  {{- end }}
+  {{- if .Values.prometheus.jmxExporter.enabled }}
+  PROM_JMX_EXPORTER_ENABLED: "true"
+  PROM_JMX_EXPORTER_PORT: {{ .Values.prometheus.jmxExporter.port | quote }}
+  {{- end }}

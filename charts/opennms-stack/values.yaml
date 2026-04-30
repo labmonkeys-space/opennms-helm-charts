@@ -1,0 +1,68 @@
+# Default values for opennms-stack umbrella.
+# This is a YAML-formatted file.
+#
+# The umbrella exposes a `global.*` block whose values flow into both
+# subcharts. Each subchart's own values can still be overridden under the
+# top-level `core:` or `sentinel:` keys.
+
+# Shared values consumed by the core and sentinel subcharts.
+global:
+  # org.opennms.instance.id — must match across Core, Sentinel, and any
+  # Minions (which install separately).
+  instanceId: OpenNMS
+
+  # BYO Postgres. The umbrella NEVER deploys Postgres.
+  # Both Core and Sentinel read from this block.
+  # The referenced Secret MUST contain keys:
+  #   POSTGRES_USER, POSTGRES_PASSWORD, OPENNMS_DBUSER, OPENNMS_DBPASS
+  # (Core consumes all four via envFrom; Sentinel consumes OPENNMS_DBUSER /
+  # OPENNMS_DBPASS via the envsubst init container.)
+  postgresql:
+    host: ""
+    port: 5432
+    database: opennms
+    auth:
+      existingSecret: ""
+
+  # BYO Kafka.
+  kafka:
+    bootstrapServers: ""
+
+  # BYO Elasticsearch (used by Sentinel).
+  elasticsearch:
+    url: ""
+    auth:
+      existingSecret: ""
+
+# OpenNMS Horizon Core overrides. See charts/core/values.yaml for the full
+# values surface; anything set here overrides the subchart defaults but is
+# still subject to global.* fall-through for shared keys.
+#
+# Example overrides:
+#   core:
+#     persistence:
+#       size: 200Gi
+#     resources:
+#       requests:
+#         cpu: 500m
+#         memory: 4Gi
+#     prometheusRemoteWriter:
+#       enabled: true
+#       writeUrl: https://mimir.example/api/v1/push
+core: {}
+
+# OpenNMS Sentinel overrides. See charts/sentinel/values.yaml.
+#
+# Example overrides:
+#   sentinel:
+#     replicaCount: 3
+#     autoscaling:
+#       enabled: true
+#       minReplicas: 2
+#       maxReplicas: 8
+#     opennms:
+#       http:
+#         existingSecret: opennms-http
+#       broker:
+#         existingSecret: opennms-broker
+sentinel: {}

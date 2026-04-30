@@ -1,0 +1,16 @@
+---
+# Empty confd YAML overlay. Mounted at /opt/opennms/horizon-config.yaml so the
+# upstream entrypoint's processConfdTemplates step has a valid file to read.
+# Confd templates produce empty/default .cfg files which the etc-overlay
+# (rendered by this chart's envsubst init) subsequently overwrites.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "core.fullname" . }}-confd-overlay
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app.opennms.org/component: core
+    {{- include "core.labels" . | nindent 4 }}
+data:
+  horizon-config.yaml: |
+    {}

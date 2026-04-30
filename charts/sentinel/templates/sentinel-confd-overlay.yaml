@@ -1,0 +1,16 @@
+---
+# Empty confd YAML overlay. Mounted at /opt/sentinel/sentinel-config.yaml so
+# the upstream entrypoint's processConfdTemplates step has a valid file to read.
+# The chart's etc-overlay (rendered by the envsubst init) overwrites whatever
+# confd produces.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "sentinel.fullname" . }}-confd-overlay
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app.opennms.org/component: sentinel
+    {{- include "sentinel.labels" . | nindent 4 }}
+data:
+  sentinel-config.yaml: |
+    {}

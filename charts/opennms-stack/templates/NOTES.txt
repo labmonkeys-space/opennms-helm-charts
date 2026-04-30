@@ -1,0 +1,52 @@
+OpenNMS Horizon {{ .Chart.AppVersion }} stack (Core + Sentinel) installed.
+
+Release:    {{ .Release.Name }}
+Namespace:  {{ .Release.Namespace }}
+
+==============================================================================
+What this umbrella deployed
+==============================================================================
+  • OpenNMS Core      (StatefulSet, replicas: 1)
+  • OpenNMS Sentinel  (Deployment{{ if .Values.sentinel }}{{ if .Values.sentinel.autoscaling }}{{ if .Values.sentinel.autoscaling.enabled }} + HPA{{ end }}{{ end }}{{ end }})
+
+It does NOT deploy:
+  • Postgres, Kafka, or Elasticsearch — these are BYO.
+  • Minion — install the `minion` chart separately for each remote location.
+
+==============================================================================
+BYO infrastructure contract
+==============================================================================
+You must provide:
+
+  • Postgres reachable at  {{ .Values.global.postgresql.host | default "<global.postgresql.host UNSET>" }}:{{ .Values.global.postgresql.port }}
+  • Kafka brokers          {{ .Values.global.kafka.bootstrapServers | default "<global.kafka.bootstrapServers UNSET>" }}
+  • Elasticsearch          {{ .Values.global.elasticsearch.url | default "<global.elasticsearch.url UNSET>" }}
+
+And these Secrets in namespace {{ .Release.Namespace }}:
+
+  global.postgresql.auth.existingSecret = {{ .Values.global.postgresql.auth.existingSecret | default "<UNSET>" }}
+    keys: POSTGRES_USER, POSTGRES_PASSWORD, OPENNMS_DBUSER, OPENNMS_DBPASS
+
+  global.elasticsearch.auth.existingSecret = {{ .Values.global.elasticsearch.auth.existingSecret | default "<not required if ES is anonymous>" }}
+    keys: ELASTIC_USERNAME, ELASTIC_PASSWORD
+
+  sentinel.opennms.http.existingSecret    keys: OPENNMS_HTTP_USER, OPENNMS_HTTP_PASS
+  sentinel.opennms.broker.existingSecret  keys: OPENNMS_BROKER_USER, OPENNMS_BROKER_PASS
+
+==============================================================================
+Deploying Minion at a remote location
+==============================================================================
+The Minion chart is a separate release per location. From any cluster:
+
+  helm install minion-nyc opennms-helm-charts/minion \
+    --set location=nyc \
+    --set instanceId={{ .Values.global.instanceId }} \
+    --set kafka.bootstrapServers={{ .Values.global.kafka.bootstrapServers | default "<your kafka>" }} \
+    --set opennms.http.existingSecret=onms-http \
+    --set opennms.broker.existingSecret=onms-broker
+
+==============================================================================
+Verify
+==============================================================================
+  kubectl --namespace {{ .Release.Namespace }} get sts,deploy,pod \
+    -l app.kubernetes.io/instance={{ .Release.Name }}

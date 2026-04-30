@@ -1,8 +1,11 @@
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: {{ include "sentinel.fullname" . }}
+  namespace: {{ .Release.Namespace }}
   labels:
+    app.opennms.org/component: sentinel
     {{- include "sentinel.labels" . | nindent 4 }}
 spec:
   {{- if not .Values.autoscaling.enabled }}
@@ -13,15 +16,15 @@ spec:
       {{- include "sentinel.selectorLabels" . | nindent 6 }}
   template:
     metadata:
+      labels:
+        {{- include "sentinel.selectorLabels" . | nindent 8 }}
+        {{- with .Values.podLabels }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
       {{- with .Values.podAnnotations }}
       annotations:
         {{- toYaml . | nindent 8 }}
       {{- end }}
-      labels:
-        {{- include "sentinel.labels" . | nindent 8 }}
-        {{- with .Values.podLabels }}
-        {{- toYaml . | nindent 8 }}
-        {{- end }}
     spec:
       {{- with .Values.imagePullSecrets }}
       imagePullSecrets:
@@ -32,18 +35,25 @@ spec:
       securityContext:
         {{- toYaml . | nindent 8 }}
       {{- end }}
+      initContainers:
+        {{- include "sentinel.envsubstInitContainer" . | nindent 8 }}
       containers:
         - name: {{ .Chart.Name }}
-          {{- with .Values.securityContext }}
-          securityContext:
-            {{- toYaml . | nindent 12 }}
-          {{- end }}
-          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
-          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          image: {{ include "sentinel.image" . | quote }}
+          imagePullPolicy: {{ .Values.image.pullPolicy | quote }}
+          args:
+            - {{ include "sentinel.startupArg" . }}
+          env:
+            {{- include "sentinel.runtimeEnv" . | nindent 12 }}
           ports:
-            - name: http
-              containerPort: {{ .Values.service.port }}
+            - name: karaf
+              containerPort: 8301
               protocol: TCP
+            {{- if .Values.prometheus.jmxExporter.enabled }}
+            - name: prom-jmx
+              containerPort: {{ .Values.prometheus.jmxExporter.port }}
+              protocol: TCP
+            {{- end }}
           {{- with .Values.livenessProbe }}
           livenessProbe:
             {{- toYaml . | nindent 12 }}
@@ -56,14 +66,31 @@ spec:
           resources:
             {{- toYaml . | nindent 12 }}
           {{- end }}
-          {{- with .Values.volumeMounts }}
-          volumeMounts:
+          {{- with .Values.securityContext }}
+          securityContext:
             {{- toYaml . | nindent 12 }}
           {{- end }}
-      {{- with .Values.volumes }}
+          volumeMounts:
+            - name: confd-overlay
+              mountPath: /opt/sentinel/sentinel-config.yaml
+              subPath: sentinel-config.yaml
+            - name: etc-overlay
+              mountPath: /opt/sentinel-etc-overlay
+            {{- with .Values.volumeMounts }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
       volumes:
+        - name: config-templates
+          configMap:
+            name: {{ include "sentinel.fullname" . }}-config-templates
+        - name: confd-overlay
+          configMap:
+            name: {{ include "sentinel.fullname" . }}-confd-overlay
+        - name: etc-overlay
+          emptyDir: {}
+        {{- with .Values.volumes }}
         {{- toYaml . | nindent 8 }}
-      {{- end }}
+        {{- end }}
       {{- with .Values.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}

@@ -1,0 +1,32 @@
+apiVersion: v2
+name: opennms-stack
+description: |
+  Umbrella Helm chart bundling OpenNMS Horizon Core and Sentinel for the
+  central OpenNMS site. Connects to BYO Postgres, Kafka, and Elasticsearch.
+  Minion is deployed independently per remote location and is NOT part of
+  this umbrella.
+icon: https://avatars.githubusercontent.com/u/2972482?s=200&v=4
+maintainers:
+  - name: indigo423
+    email: ronny@no42.org
+    url: https://github.com/indigo423
+
+type: application
+
+# Bump this version whenever any pinned subchart version changes.
+version: 0.1.0
+
+# Lock-step with the bundled OpenNMS components (Core and Sentinel both run
+# this version of Horizon).
+appVersion: "35.0.5"
+
+# Strict-pin subchart versions. The matched-pair invariant — Core and Sentinel
+# must run the same OpenNMS major version due to shared JPA schema and Karaf
+# features — is enforced here at the umbrella level.
+dependencies:
+  - name: core
+    version: "=0.2.0"
+    repository: file://../core
+  - name: sentinel
+    version: "=0.2.0"
+    repository: file://../sentinel

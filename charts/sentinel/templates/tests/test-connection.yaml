@@ -6,10 +6,15 @@ metadata:
     {{- include "sentinel.labels" . | nindent 4 }}
   annotations:
     "helm.sh/hook": test
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
 spec:
-  containers:
-    - name: wget
-      image: busybox
-      command: ['wget']
-      args: ['{{ include "sentinel.fullname" . }}:{{ .Values.service.port }}']
   restartPolicy: Never
+  containers:
+    - name: nc
+      image: busybox
+      command: ["sh", "-c"]
+      args:
+        - |
+          set -e
+          # Smoke-test that the Karaf shell SSH port is reachable.
+          nc -z -w5 {{ include "sentinel.fullname" . }} {{ .Values.service.karaf.port }}

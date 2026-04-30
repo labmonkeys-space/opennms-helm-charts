@@ -1,6 +1,6 @@
 # minion
 
-![Version: 0.1.2](https://img.shields.io/badge/Version-0.1.2-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: 1.16.0](https://img.shields.io/badge/AppVersion-1.16.0-informational?style=flat-square)
+![Version: 0.2.0](https://img.shields.io/badge/Version-0.2.0-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: 35.0.5](https://img.shields.io/badge/AppVersion-35.0.5-informational?style=flat-square)
 
 A Helm chart for Kubernetes
 
@@ -15,36 +15,54 @@ A Helm chart for Kubernetes
 | Key | Type | Default | Description |
 |-----|------|---------|-------------|
 | affinity | object | `{}` |  |
-| autoscaling.enabled | bool | `false` |  |
-| autoscaling.maxReplicas | int | `100` |  |
-| autoscaling.minReplicas | int | `1` |  |
-| autoscaling.targetCPUUtilizationPercentage | int | `80` |  |
+| configRenderer.image.pullPolicy | string | `"IfNotPresent"` |  |
+| configRenderer.image.repository | string | `"docker.io/alpine"` |  |
+| configRenderer.image.tag | string | `"3.19"` |  |
+| extraConfigFiles | object | `{}` |  |
 | fullnameOverride | string | `""` |  |
-| httpRoute | object | `{"annotations":{},"enabled":false,"hostnames":["chart-example.local"],"parentRefs":[{"name":"gateway","sectionName":"http"}],"rules":[{"matches":[{"path":{"type":"PathPrefix","value":"/headers"}}]}]}` | Expose the service via gateway-api HTTPRoute Requires Gateway API resources and suitable controller installed within the cluster (see: https://gateway-api.sigs.k8s.io/guides/) |
 | image.pullPolicy | string | `"IfNotPresent"` |  |
-| image.repository | string | `"nginx"` |  |
+| image.repository | string | `"docker.io/opennms/minion"` |  |
 | image.tag | string | `""` |  |
 | imagePullSecrets | list | `[]` |  |
-| ingress.annotations | object | `{}` |  |
-| ingress.className | string | `""` |  |
-| ingress.enabled | bool | `false` |  |
-| ingress.hosts[0].host | string | `"chart-example.local"` |  |
-| ingress.hosts[0].paths[0].path | string | `"/"` |  |
-| ingress.hosts[0].paths[0].pathType | string | `"ImplementationSpecific"` |  |
-| ingress.tls | list | `[]` |  |
-| livenessProbe.httpGet.path | string | `"/"` |  |
-| livenessProbe.httpGet.port | string | `"http"` |  |
+| instanceId | string | `"OpenNMS"` |  |
+| javaOpts | string | `""` |  |
+| kafka.auth.enabled | bool | `false` |  |
+| kafka.auth.existingSecret | string | `""` |  |
+| kafka.auth.mechanism | string | `"SCRAM-SHA-512"` |  |
+| kafka.bootstrapServers | string | `""` |  |
+| kafka.extraProperties | object | `{}` |  |
+| kafka.tls.enabled | bool | `false` |  |
+| kafka.tls.existingSecret | string | `""` |  |
+| livenessProbe.failureThreshold | int | `6` |  |
+| livenessProbe.initialDelaySeconds | int | `60` |  |
+| livenessProbe.periodSeconds | int | `30` |  |
+| livenessProbe.tcpSocket.port | string | `"karaf"` |  |
+| livenessProbe.timeoutSeconds | int | `5` |  |
+| location | string | `""` |  |
 | nameOverride | string | `""` |  |
 | nodeSelector | object | `{}` |  |
+| opennms.broker.existingSecret | string | `""` |  |
+| opennms.http.existingSecret | string | `""` |  |
+| persistence.accessMode | string | `"ReadWriteOnce"` |  |
+| persistence.annotations | object | `{}` |  |
+| persistence.enabled | bool | `true` |  |
+| persistence.size | string | `"1Gi"` |  |
+| persistence.storageClassName | string | `""` |  |
 | podAnnotations | object | `{}` |  |
 | podLabels | object | `{}` |  |
 | podSecurityContext | object | `{}` |  |
-| readinessProbe.httpGet.path | string | `"/"` |  |
-| readinessProbe.httpGet.port | string | `"http"` |  |
+| prometheus.jmxExporter.enabled | bool | `false` |  |
+| prometheus.jmxExporter.port | int | `9299` |  |
+| readinessProbe.failureThreshold | int | `6` |  |
+| readinessProbe.initialDelaySeconds | int | `30` |  |
+| readinessProbe.periodSeconds | int | `10` |  |
+| readinessProbe.tcpSocket.port | string | `"karaf"` |  |
+| readinessProbe.timeoutSeconds | int | `3` |  |
 | replicaCount | int | `1` |  |
 | resources | object | `{}` |  |
 | securityContext | object | `{}` |  |
-| service.port | int | `80` |  |
+| selectorLabels."app.opennms.org/component" | string | `"minion"` |  |
+| service.karaf.port | int | `8201` |  |
 | service.type | string | `"ClusterIP"` |  |
 | serviceAccount.annotations | object | `{}` |  |
 | serviceAccount.automount | bool | `true` |  |

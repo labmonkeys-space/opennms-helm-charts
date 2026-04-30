@@ -1,0 +1,49 @@
+---
+# ConfigMap of placeholder .cfg / .properties files. The envsubst init container
+# renders these into /opt/sentinel-etc-overlay/etc/ so the upstream entrypoint's
+# applyOverlayConfig step picks them up. Keys with "__" are decoded to "/" to
+# allow subpath placement under etc/.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "sentinel.fullname" . }}-config-templates
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app.opennms.org/component: sentinel
+    {{- include "sentinel.labels" . | nindent 4 }}
+data:
+  instance-id.properties: |
+    org.opennms.instance.id={{ include "sentinel.instanceId" . }}
+
+{{- if include "sentinel.kafkaBootstrap" . }}
+  org.opennms.core.ipc.sink.kafka.cfg: |
+{{ include "sentinel.kafkaCfgBlock" . | indent 4 }}
+{{- end }}
+
+{{- $pgSecret := include "sentinel.postgresExistingSecret" . }}
+{{- if $pgSecret }}
+  org.opennms.netmgt.distributed.datasource.cfg: |
+    datasource.url=jdbc:postgresql://{{ include "sentinel.postgresHost" . }}:{{ include "sentinel.postgresPort" . }}/{{ include "sentinel.postgresDatabase" . }}
+    datasource.username=${OPENNMS_DBUSER}
+    datasource.password=${OPENNMS_DBPASS}
+    datasource.databaseName={{ include "sentinel.postgresDatabase" . }}
+{{- end }}
+
+{{- if .Values.elasticsearch.enabled }}
+  org.opennms.features.flows.persistence.elastic.cfg: |
+    elasticUrl={{ include "sentinel.elasticsearchUrl" . }}
+    elasticIndexStrategy={{ .Values.elasticsearch.indexStrategy }}
+    settings.index.number_of_replicas={{ .Values.elasticsearch.replicas }}
+    connTimeout={{ .Values.elasticsearch.connTimeout }}
+    readTimeout={{ .Values.elasticsearch.readTimeout }}
+    {{- $esSecret := include "sentinel.elasticsearchExistingSecret" . }}
+    {{- if $esSecret }}
+    elasticUser=${ELASTIC_USERNAME}
+    elasticPassword=${ELASTIC_PASSWORD}
+    {{- end }}
+{{- end }}
+
+{{- range $name, $content := .Values.extraConfigFiles }}
+  {{ $name }}: |
+{{ $content | indent 4 }}
+{{- end }}

@@ -7,43 +7,108 @@ metadata:
   labels:
     app.opennms.org/component: core
     {{- include "core.labels" . | nindent 4 }}
-  {{- with .Values.annotations }}
-  annotations:
-    {{- toYaml . | nindent 4 }}
-  {{- end }}
 spec:
   replicas: 1
   serviceName: {{ include "core.fullname" . }}-headless
   selector:
     matchLabels:
       {{- include "core.selectorLabels" . | nindent 6 }}
+  {{- if .Values.persistence.enabled }}
+  volumeClaimTemplates:
+    - metadata:
+        name: opennms-data
+        {{- with .Values.persistence.annotations }}
+        annotations:
+          {{- toYaml . | nindent 10 }}
+        {{- end }}
+      spec:
+        accessModes:
+          - {{ .Values.persistence.accessMode | quote }}
+        {{- if .Values.persistence.storageClassName }}
+        storageClassName: {{ .Values.persistence.storageClassName | quote }}
+        {{- end }}
+        resources:
+          requests:
+            storage: {{ .Values.persistence.size | quote }}
+  {{- end }}
   template:
     metadata:
       labels:
         {{- include "core.selectorLabels" . | nindent 8 }}
+        {{- with .Values.podLabels }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
     spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "core.serviceAccountName" . }}
+      {{- with .Values.podSecurityContext }}
+      securityContext:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
       initContainers:
+        {{- if .Values.prometheusRemoteWriter.enabled }}
+        {{- /* download the prometheus-remote-writer KAR into the OpenNMS overlay */}}
+        - name: download-plugins
+          image: "{{ .Values.configRenderer.image.repository }}:{{ .Values.configRenderer.image.tag }}"
+          imagePullPolicy: {{ .Values.configRenderer.image.pullPolicy | quote }}
+          command:
+            - /bin/sh
+            - -c
+            - |
+              set -eu
+              mkdir -p /opt/opennms-overlay/deploy
+              wget -q -O /opt/opennms-overlay/deploy/prometheus-remote-writer.kar \
+                "$KAR_URL"
+          env:
+            - name: KAR_URL
+              value: {{ include "core.prometheusRemoteWriterKarUrl" . | quote }}
+          volumeMounts:
+            - name: opennms-overlay
+              mountPath: /opt/opennms-overlay
+        {{- end }}
+        {{- /* envsubst init: render placeholder .cfg files into etc-overlay emptyDir */}}
+        {{- include "core.envsubstInitContainer" . | nindent 8 }}
+        {{- /* OpenNMS install / upgrade phase (idempotent — checks etc/configured) */}}
         - name: {{ .Chart.Name }}-init
-          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          image: {{ include "core.image" . | quote }}
           imagePullPolicy: {{ .Values.image.pullPolicy | quote }}
           args:
-              - -i
+            - -i
           envFrom:
             - configMapRef:
-                name: core-configmap
+                name: {{ include "core.fullname" . }}-env
             - secretRef:
-                name: core-credentials
+                name: {{ include "core.postgresSecretName" . }}
+          volumeMounts:
+            - name: confd-overlay
+              mountPath: /opt/opennms/horizon-config.yaml
+              subPath: horizon-config.yaml
+            - name: etc-overlay
+              mountPath: /opt/opennms-etc-overlay
+            {{- if .Values.prometheusRemoteWriter.enabled }}
+            - name: opennms-overlay
+              mountPath: /opt/opennms-overlay
+            {{- end }}
+            - name: opennms-data
+              mountPath: /opennms-data
       containers:
-        - name: {{ .Chart.Name | quote }}
-          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+        - name: {{ .Chart.Name }}
+          image: {{ include "core.image" . | quote }}
           imagePullPolicy: {{ .Values.image.pullPolicy | quote }}
           args:
             - -f
           envFrom:
             - configMapRef:
-                name: core-configmap
+                name: {{ include "core.fullname" . }}-env
             - secretRef:
-                name: core-credentials
+                name: {{ include "core.postgresSecretName" . }}
           ports:
             - name: webui
               containerPort: 8980
@@ -51,6 +116,11 @@ spec:
             - name: karaf
               containerPort: 8101
               protocol: TCP
+            {{- if .Values.prometheus.jmxExporter.enabled }}
+            - name: prom-jmx
+              containerPort: {{ .Values.prometheus.jmxExporter.port }}
+              protocol: TCP
+            {{- end }}
           {{- with .Values.livenessProbe }}
           livenessProbe:
             {{- toYaml . | nindent 12 }}
@@ -59,3 +129,58 @@ spec:
           readinessProbe:
             {{- toYaml . | nindent 12 }}
           {{- end }}
+          {{- with .Values.resources }}
+          resources:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.securityContext }}
+          securityContext:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          volumeMounts:
+            - name: confd-overlay
+              mountPath: /opt/opennms/horizon-config.yaml
+              subPath: horizon-config.yaml
+            - name: etc-overlay
+              mountPath: /opt/opennms-etc-overlay
+            {{- if .Values.prometheusRemoteWriter.enabled }}
+            - name: opennms-overlay
+              mountPath: /opt/opennms-overlay
+            {{- end }}
+            - name: opennms-data
+              mountPath: /opennms-data
+            {{- with .Values.volumeMounts }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+      volumes:
+        - name: config-templates
+          configMap:
+            name: {{ include "core.fullname" . }}-config-templates
+        - name: confd-overlay
+          configMap:
+            name: {{ include "core.fullname" . }}-confd-overlay
+        - name: etc-overlay
+          emptyDir: {}
+        {{- if .Values.prometheusRemoteWriter.enabled }}
+        - name: opennms-overlay
+          emptyDir: {}
+        {{- end }}
+        {{- if not .Values.persistence.enabled }}
+        - name: opennms-data
+          emptyDir: {}
+        {{- end }}
+        {{- with .Values.volumes }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

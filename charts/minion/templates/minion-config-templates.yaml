@@ -1,0 +1,55 @@
+---
+# ConfigMap of placeholder .cfg / .properties / .boot files. The envsubst init
+# container renders these into /opt/minion-etc-overlay/etc/ where the upstream
+# entrypoint's applyOverlayConfig step picks them up. Keys with "__" are decoded
+# to "/" to allow subpath placement under etc/.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "minion.fullname" . }}-config-templates
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app.opennms.org/component: minion
+    {{- include "minion.labels" . | nindent 4 }}
+data:
+  instance-id.properties: |
+    org.opennms.instance.id={{ .Values.instanceId }}
+
+  org.opennms.minion.controller.cfg: |
+    id = ${MINION_ID}
+    location = ${MINION_LOCATION}
+
+{{- if .Values.kafka.bootstrapServers }}
+  org.opennms.core.ipc.sink.kafka.cfg: |
+{{ include "minion.kafkaCfgBlock" . | indent 4 }}
+
+  org.opennms.core.ipc.rpc.kafka.cfg: |
+{{ include "minion.kafkaCfgBlock" . | indent 4 }}
+
+  org.opennms.core.ipc.twin.kafka.cfg: |
+{{ include "minion.kafkaCfgBlock" . | indent 4 }}
+
+  # Karaf featuresBoot files — disable the JMS strategy, enable Kafka.
+  # These are static (this chart only supports Kafka).
+  kafka-ipc.boot: |
+    !minion-jms
+    !opennms-core-ipc-jms
+    opennms-core-ipc-kafka
+
+  kafka-rpc.boot: |
+    !opennms-core-ipc-rpc-jms
+    opennms-core-ipc-rpc-kafka
+
+  kafka-sink.boot: |
+    !opennms-core-ipc-sink-camel
+    opennms-core-ipc-sink-kafka
+
+  kafka-twin.boot: |
+    !opennms-core-ipc-twin-jms
+    opennms-core-ipc-twin-kafka
+{{- end }}
+
+{{- range $name, $content := .Values.extraConfigFiles }}
+  {{ $name }}: |
+{{ $content | indent 4 }}
+{{- end }}

@@ -1,0 +1,13 @@
+# Values for chart-testing (`ct install --charts charts/core`).
+# Targets the in-cluster CNPG Postgres set up by `make install-postgres`.
+
+# Disable the 50Gi PVC in kind — no default storage class.
+persistence:
+  enabled: false
+
+# Default postgresql.host already points at CNPG's RW service.
+# Lab-mode credentials match the CNPG superuser/db creds.
+
+# No Kafka in this Core-only test — bootstrap.servers stays empty.
+# Core boots and its WebUI reaches readiness; Kafka-using features will error
+# in logs but won't block the install or the wget smoke test.

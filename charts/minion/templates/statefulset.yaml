@@ -1,0 +1,128 @@
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ include "minion.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app.opennms.org/component: minion
+    {{- include "minion.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  serviceName: {{ include "minion.fullname" . }}-headless
+  selector:
+    matchLabels:
+      {{- include "minion.selectorLabels" . | nindent 6 }}
+  {{- if .Values.persistence.enabled }}
+  volumeClaimTemplates:
+    - metadata:
+        name: minion-data
+        {{- with .Values.persistence.annotations }}
+        annotations:
+          {{- toYaml . | nindent 10 }}
+        {{- end }}
+      spec:
+        accessModes:
+          - {{ .Values.persistence.accessMode | quote }}
+        {{- if .Values.persistence.storageClassName }}
+        storageClassName: {{ .Values.persistence.storageClassName | quote }}
+        {{- end }}
+        resources:
+          requests:
+            storage: {{ .Values.persistence.size | quote }}
+  {{- end }}
+  template:
+    metadata:
+      labels:
+        {{- include "minion.selectorLabels" . | nindent 8 }}
+        {{- with .Values.podLabels }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "minion.serviceAccountName" . }}
+      {{- with .Values.podSecurityContext }}
+      securityContext:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      initContainers:
+        {{- include "minion.envsubstInitContainer" . | nindent 8 }}
+      containers:
+        - name: {{ .Chart.Name }}
+          image: {{ include "minion.image" . | quote }}
+          imagePullPolicy: {{ .Values.image.pullPolicy | quote }}
+          args:
+            - {{ include "minion.startupArg" . }}
+          env:
+            {{- include "minion.runtimeEnv" . | nindent 12 }}
+          ports:
+            - name: karaf
+              containerPort: 8201
+              protocol: TCP
+            {{- if .Values.prometheus.jmxExporter.enabled }}
+            - name: prom-jmx
+              containerPort: {{ .Values.prometheus.jmxExporter.port }}
+              protocol: TCP
+            {{- end }}
+          {{- with .Values.livenessProbe }}
+          livenessProbe:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.readinessProbe }}
+          readinessProbe:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.resources }}
+          resources:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.securityContext }}
+          securityContext:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          volumeMounts:
+            - name: confd-overlay
+              mountPath: /opt/minion/minion-config.yaml
+              subPath: minion-config.yaml
+            - name: etc-overlay
+              mountPath: /opt/minion-etc-overlay
+            - name: minion-data
+              mountPath: /opt/minion/data
+            {{- with .Values.volumeMounts }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+      volumes:
+        - name: config-templates
+          configMap:
+            name: {{ include "minion.fullname" . }}-config-templates
+        - name: confd-overlay
+          configMap:
+            name: {{ include "minion.fullname" . }}-confd-overlay
+        - name: etc-overlay
+          emptyDir: {}
+        {{- if not .Values.persistence.enabled }}
+        - name: minion-data
+          emptyDir: {}
+        {{- end }}
+        {{- with .Values.volumes }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

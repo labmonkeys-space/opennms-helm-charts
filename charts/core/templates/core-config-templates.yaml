@@ -1,0 +1,59 @@
+---
+# ConfigMap of placeholder .cfg / .properties files. The envsubst init container
+# renders these into /opt/opennms-etc-overlay/etc/ so the upstream entrypoint's
+# applyOverlayConfig step picks them up. Confd templates run before this overlay
+# and are overwritten by it.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "core.fullname" . }}-config-templates
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app.opennms.org/component: core
+    {{- include "core.labels" . | nindent 4 }}
+data:
+  instance-id.properties: |
+    org.opennms.instance.id={{ include "core.instanceId" . }}
+
+{{- if include "core.kafkaBootstrap" . }}
+  org.opennms.core.ipc.sink.kafka.cfg: |
+{{ include "core.kafkaCfgBlock" . | indent 4 }}
+
+  org.opennms.core.ipc.rpc.kafka.cfg: |
+{{ include "core.kafkaCfgBlock" . | indent 4 }}
+
+  org.opennms.core.ipc.twin.kafka.cfg: |
+{{ include "core.kafkaCfgBlock" . | indent 4 }}
+{{- end }}
+
+{{- if .Values.elasticsearch.enabled }}
+  org.opennms.features.flows.persistence.elastic.cfg: |
+    elasticUrl={{ .Values.elasticsearch.url }}
+    elasticIndexStrategy={{ .Values.elasticsearch.indexStrategy }}
+    {{- if .Values.elasticsearch.auth.existingSecret }}
+    elasticUser=${ELASTIC_USERNAME}
+    elasticPassword=${ELASTIC_PASSWORD}
+    {{- end }}
+{{- end }}
+
+{{- if .Values.prometheusRemoteWriter.enabled }}
+  org.opennms.plugins.tss.prometheus-remote-writer.cfg: |
+    write.url={{ required "prometheusRemoteWriter.writeUrl is required when prometheusRemoteWriter.enabled" .Values.prometheusRemoteWriter.writeUrl }}
+    {{- if .Values.prometheusRemoteWriter.readUrl }}
+    read.url={{ .Values.prometheusRemoteWriter.readUrl }}
+    {{- end }}
+    {{- if .Values.prometheusRemoteWriter.auth.existingSecret }}
+    write.user=${PRW_USERNAME}
+    write.password=${PRW_PASSWORD}
+    {{- end }}
+
+  # The "__" delimiter is decoded to "/" by the envsubst init container,
+  # so this lands at etc/opennms.properties.d/timeseries.properties
+  opennms.properties.d__timeseries.properties: |
+    org.opennms.timeseries.strategy = integration
+{{- end }}
+
+{{- range $name, $content := .Values.extraConfigFiles }}
+  {{ $name }}: |
+{{ $content | indent 4 }}
+{{- end }}

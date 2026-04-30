@@ -36,6 +36,9 @@ jobs:
       - name: Run Chart-lint
         run: make lint
 
+      - name: Resolve umbrella dependencies
+        run: helm dep update charts/opennms-stack
+
       - name: Chart testing install Core chart
         run: make test-install-core
 
@@ -44,3 +47,6 @@ jobs:
 
       - name: Chart testing install Sentinel chart
         run: make test-install-sentinel
+
+      - name: Chart testing install opennms-stack umbrella
+        run: make test-install-stack

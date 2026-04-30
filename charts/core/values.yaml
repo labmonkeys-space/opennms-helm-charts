@@ -1,138 +1,106 @@
 # Default values for core.
 # This is a YAML-formatted file.
-# Declare variables to be passed into your templates.
 
-# This sets the container image more information can be found here: https://kubernetes.io/docs/concepts/containers/images/
+# OpenNMS Horizon Core image.
+# image.tag defaults to the chart's appVersion. Override only for development
+# (e.g. `--set image.tag=bleeding`).
 image:
   repository: docker.io/opennms/horizon
-  # This sets the pull policy for images.
   pullPolicy: IfNotPresent
-  # Overrides the image tag whose default is the chart appVersion.
-  tag: "bleeding"
+  tag: ""
 
-# This is for the secrets for pulling an image from a private repository more information can be found here: https://kubernetes.io/docs/tasks/configure-pod-container/pull-image-private-registry/
 imagePullSecrets: []
-# This is to override the chart name.
+
 nameOverride: ""
 fullnameOverride: ""
 
-# This section builds out the service account more information can be found here: https://kubernetes.io/docs/concepts/security/service-accounts/
+# Init container that envsubst-renders placeholder .cfg files into the
+# etc-overlay before the runtime container starts. Default: alpine:3.19 with
+# `apk add gettext` at startup.
+configRenderer:
+  image:
+    repository: docker.io/alpine
+    tag: "3.19"
+    pullPolicy: IfNotPresent
+
 serviceAccount:
-  # Specifies whether a service account should be created
+  # Specifies whether a service account should be created.
   create: true
-  # Automatically mount a ServiceAccount's API credentials?
+  # Automatically mount a ServiceAccount's API credentials.
   automount: true
-  # Annotations to add to the service account
+  # Annotations to add to the service account.
   annotations: {}
-  # The name of the service account to use.
-  # If not set and create is true, a name is generated using the fullname template
+  # The name of the service account to use. If not set and create is true,
+  # a name is generated using the fullname template.
   name: ""
 
 selectorLabels:
   app.opennms.org/component: core
 
-# This is for setting Kubernetes Annotations to a Pod.
-# For more information checkout: https://kubernetes.io/docs/concepts/overview/working-with-objects/annotations/
 podAnnotations: {}
-# This is for setting Kubernetes Labels to a Pod.
-# For more information checkout: https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/
 podLabels: {}
 
 podSecurityContext: {}
-  # fsGroup: 2000
-
 securityContext: {}
-  # capabilities:
-  #   drop:
-  #   - ALL
-  # readOnlyRootFilesystem: true
-  # runAsNonRoot: true
-  # runAsUser: 1000
 
-# This is for setting up a service more information can be found here: https://kubernetes.io/docs/concepts/services-networking/service/
+# Service exposes the WebUI (HTTP) and Karaf shell (SSH).
 service:
   type: ClusterIP
   port: 8980
-  karaf:
-    port: 8101
   webui:
     port: 8980
+  karaf:
+    port: 8101
 
-# This block is for setting up the ingress for more information can be found here: https://kubernetes.io/docs/concepts/services-networking/ingress/
+# Optional Ingress for the WebUI.
 ingress:
   enabled: false
   className: ""
   annotations: {}
-    # kubernetes.io/ingress.class: nginx
-    # kubernetes.io/tls-acme: "true"
   hosts:
     - host: chart-example.local
       paths:
         - path: /
           pathType: ImplementationSpecific
   tls: []
-  #  - secretName: chart-example-tls
-  #    hosts:
-  #      - chart-example.local
 
-# -- Expose the service via gateway-api HTTPRoute
-# Requires Gateway API resources and suitable controller installed within the cluster
-# (see: https://gateway-api.sigs.k8s.io/guides/)
+# Optional Gateway-API HTTPRoute for the WebUI.
+# Requires Gateway API resources and a controller installed in the cluster
+# (see https://gateway-api.sigs.k8s.io/guides/).
 httpRoute:
-  # HTTPRoute enabled.
   enabled: false
-  # HTTPRoute annotations.
   annotations: {}
-  # Which Gateways this Route is attached to.
   parentRefs:
-  - name: gateway
-    sectionName: http
-    # namespace: default
-  # Hostnames matching HTTP header.
+    - name: gateway
+      sectionName: http
   hostnames:
-  - chart-example.local
-  # List of rules and filters applied.
+    - chart-example.local
   rules:
-  - matches:
-    - path:
-        type: PathPrefix
-        value: /headers
-  #   filters:
-  #   - type: RequestHeaderModifier
-  #     requestHeaderModifier:
-  #       set:
-  #       - name: My-Overwrite-Header
-  #         value: this-is-the-only-value
-  #       remove:
-  #       - User-Agent
-  # - matches:
-  #   - path:
-  #       type: PathPrefix
-  #       value: /echo
-  #     headers:
-  #     - name: version
-  #       value: v2
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /
+
+# Persistent storage for /opennms-data (RRD time-series, MIBs, generated reports).
+# Disable only if your time-series backend is external AND you do not need
+# persistent MIBs/reports.
+persistence:
+  enabled: true
+  storageClassName: ""
+  size: 50Gi
+  accessMode: ReadWriteOnce
+  annotations: {}
 
 resources: {}
-  # We usually recommend not to specify default resources and to leave this as a conscious
-  # choice for the user. This also increases chances charts run on environments with little
-  # resources, such as Minikube. If you do want to specify resources, uncomment the following
-  # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
-  # limits:
-  #   cpu: 100m
-  #   memory: 128Mi
-  # requests:
-  #   cpu: 100m
-  #   memory: 128Mi
 
-# This is to setup the liveness and readiness probes more information can be found here: https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/
+# Liveness uses tcpSocket on the webui port — fails if the JVM is dead OR has
+# dropped its WebUI listener. Readiness uses login.jsp until /opennms/rest/health
+# can be wired with credentials in a future chart version.
 livenessProbe:
-  exec:
-    command:
-      - "pgrep"
-      - "java"
-  initialDelaySeconds: 10
-  periodSeconds: 10
+  tcpSocket:
+    port: webui
+  initialDelaySeconds: 90
+  periodSeconds: 30
   timeoutSeconds: 5
   failureThreshold: 6
 
@@ -145,39 +113,133 @@ readinessProbe:
   failureThreshold: 20
   periodSeconds: 5
 
-# This section is for setting up autoscaling more information can be found here: https://kubernetes.io/docs/concepts/workloads/autoscaling/
+# Core is a singleton service and is not horizontally scaled. The autoscaling
+# block is retained for compatibility but disabled.
 autoscaling:
   enabled: false
   minReplicas: 1
-  maxReplicas: 100
-  targetCPUUtilizationPercentage: 80
-  # targetMemoryUtilizationPercentage: 80
+  maxReplicas: 1
 
-# Additional volumes on the output Deployment definition.
+# Additional volumes mounted into the runtime container.
 volumes: []
 # - name: foo
 #   secret:
 #     secretName: mysecret
 #     optional: false
 
-# Additional volumeMounts on the output Deployment definition.
+# Additional volumeMounts on the runtime container.
 volumeMounts: []
 # - name: foo
-#   mountPath: "/etc/foo"
+#   mountPath: /etc/foo
 #   readOnly: true
 
 nodeSelector: {}
-
 tolerations: []
-
 affinity: {}
 
+# Container time zone.
 timezone: UTC
+
+# org.opennms.instance.id — queue/topic prefix shared by Core, Sentinel, and
+# Minion. Must match across all three components to see each other's messages.
+instanceId: OpenNMS
+
+# Time-series strategy. "rrd" writes to /opennms-data/rrd. To offload time-series
+# data to a Prometheus-compatible store (Cortex, Mimir, VictoriaMetrics, Thanos)
+# enable `prometheusRemoteWriter` below — the chart will switch the strategy to
+# "integration" automatically.
+timeseriesStrategy: rrd
+
+# BYO Prometheus-compatible time-series backend via the
+# opennms-forge/prometheus-remote-writer plugin. When enabled, the chart:
+#   1. Downloads the published KAR into /opt/opennms/deploy at pod start.
+#   2. Renders org.opennms.plugins.tss.prometheus-remote-writer.cfg with the
+#      configured write/read URLs and optional auth.
+#   3. Sets org.opennms.timeseries.strategy = integration in
+#      opennms.properties.d/timeseries.properties.
+#
+# Requires Horizon Core 35+. See:
+#   https://github.com/opennms-forge/prometheus-remote-writer
+#
+# When `auth.existingSecret` is set, the Secret MUST contain keys:
+#   PRW_USERNAME, PRW_PASSWORD
+prometheusRemoteWriter:
+  enabled: false
+  # KAR version to install. Sets the default download URL on GitHub Releases.
+  version: "0.3.2"
+  kar:
+    # Override to point at an internal mirror for air-gapped environments.
+    # Leave empty to construct the default URL from `version`.
+    url: ""
+  writeUrl: ""
+  readUrl: ""
+  auth:
+    existingSecret: ""
+
+# Additional JVM options appended to JAVA_OPTS.
+javaOpts: ""
+
+# Optional Prometheus JMX exporter agent loaded inside the OpenNMS JVM.
+prometheus:
+  jmxExporter:
+    enabled: false
+    port: 9299
+
+# BYO Postgres. This chart NEVER deploys Postgres.
+#
+# When `auth.existingSecret` is set, the chart references that Secret for the
+# four credential env vars. The Secret MUST contain these keys:
+#   POSTGRES_USER, POSTGRES_PASSWORD, OPENNMS_DBUSER, OPENNMS_DBPASS
+#
+# When `auth.existingSecret` is empty, the chart renders a Secret from the
+# inline values below. This lab-mode default is intended for the
+# `make test-install-core` flow against CNPG and SHOULD NOT be used in production.
 postgresql:
-  user: postgres
-  password: "Change_Me_Postgres"
   host: cluster-helm-lint-rw.default.svc.cluster.local
   port: 5432
-  opennmsDbName: opennms
-  opennmsDbUser: opennms_dba
-  opennmsDbPassword: "Change_Me_OpenNMS_DBA"
+  database: opennms
+  auth:
+    existingSecret: ""
+    superuserName: postgres
+    superuserPassword: "Change_Me_Postgres"
+    username: opennms_dba
+    password: "Change_Me_OpenNMS_DBA"
+
+# BYO Kafka. This chart NEVER deploys Kafka.
+#
+# Renders org.opennms.core.ipc.{sink,rpc,twin}.kafka.cfg into the etc-overlay.
+# When `auth.enabled` is true, the chart references `auth.existingSecret`
+# whose keys MUST be: KAFKA_USERNAME, KAFKA_PASSWORD.
+# When `tls.enabled` is true, `tls.existingSecret` must contain `ca.crt`
+# (and `client.crt` + `client.key` for mTLS).
+kafka:
+  bootstrapServers: ""
+  auth:
+    enabled: false
+    # SCRAM-SHA-512 | SCRAM-SHA-256 | PLAIN | OAUTHBEARER
+    mechanism: SCRAM-SHA-512
+    existingSecret: ""
+  tls:
+    enabled: false
+    existingSecret: ""
+  # Passthrough Kafka client properties merged into all three .cfg files.
+  extraProperties: {}
+    # compression.type: gzip
+    # request.timeout.ms: "30000"
+
+# BYO Elasticsearch (optional for Core). When enabled, Core's flow persistence
+# writes to the configured cluster. In typical deployments Sentinel handles
+# flow persistence; only set this if your Core directly persists flows.
+elasticsearch:
+  enabled: false
+  url: ""
+  indexStrategy: monthly
+  auth:
+    # Secret must contain keys: ELASTIC_USERNAME, ELASTIC_PASSWORD
+    existingSecret: ""
+
+# Escape hatch: arbitrary additional .cfg / .properties files written into
+# the etc-overlay alongside chart-managed files. Map of filename → contents.
+extraConfigFiles: {}
+  # "org.opennms.example.cfg": |
+  #   key=value

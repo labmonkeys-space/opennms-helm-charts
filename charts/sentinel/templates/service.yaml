@@ -3,13 +3,20 @@ kind: Service
 metadata:
   name: {{ include "sentinel.fullname" . }}
   labels:
+    app.opennms.org/component: sentinel
     {{- include "sentinel.labels" . | nindent 4 }}
 spec:
   type: {{ .Values.service.type }}
   ports:
-    - port: {{ .Values.service.port }}
-      targetPort: http
+    - name: karaf
+      port: {{ .Values.service.karaf.port }}
+      targetPort: karaf
       protocol: TCP
-      name: http
+    {{- if .Values.prometheus.jmxExporter.enabled }}
+    - name: prom-jmx
+      port: {{ .Values.prometheus.jmxExporter.port }}
+      targetPort: prom-jmx
+      protocol: TCP
+    {{- end }}
   selector:
     {{- include "sentinel.selectorLabels" . | nindent 4 }}
