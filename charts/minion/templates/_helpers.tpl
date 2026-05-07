@@ -181,23 +181,11 @@ identity values; entrypoint reads them at startup.
       name: {{ .Values.opennms.http.existingSecret | quote }}
       key: OPENNMS_HTTP_PASS
 {{- end }}
-{{- if .Values.opennms.broker.existingSecret }}
-- name: OPENNMS_BROKER_USER
-  valueFrom:
-    secretKeyRef:
-      name: {{ .Values.opennms.broker.existingSecret | quote }}
-      key: OPENNMS_BROKER_USER
-- name: OPENNMS_BROKER_PASS
-  valueFrom:
-    secretKeyRef:
-      name: {{ .Values.opennms.broker.existingSecret | quote }}
-      key: OPENNMS_BROKER_PASS
-{{- end }}
 {{- end }}
 
 {{/*
 Minion startup arg. `-c` when SCV credentials come from env, `-f` otherwise.
 */}}
 {{- define "minion.startupArg" -}}
-{{- if or .Values.opennms.http.existingSecret .Values.opennms.broker.existingSecret -}}-c{{- else -}}-f{{- end -}}
+{{- if .Values.opennms.http.existingSecret -}}-c{{- else -}}-f{{- end -}}
 {{- end }}

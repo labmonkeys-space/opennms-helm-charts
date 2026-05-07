@@ -16,10 +16,21 @@
 {{- $_ := set $files "opennms.properties.d/instance-id.properties" (printf "org.opennms.instance.id=%s\n" (include "core.instanceId" .)) -}}
 
 {{- if include "core.kafkaBootstrap" . -}}
+{{- /* Per-channel Karaf .cfg files — broker, security protocol, optional SASL */ -}}
 {{- $kafkaCfg := include "core.kafkaCfgBlock" . -}}
 {{- $_ := set $files "org.opennms.core.ipc.sink.kafka.cfg" $kafkaCfg -}}
 {{- $_ := set $files "org.opennms.core.ipc.rpc.kafka.cfg" $kafkaCfg -}}
 {{- $_ := set $files "org.opennms.core.ipc.twin.kafka.cfg" $kafkaCfg -}}
+{{- /* Disable the embedded ActiveMQ broker — Core is Kafka-only here.
+       Without this the broker still starts on port 61616 alongside Kafka. */ -}}
+{{- $_ := set $files "opennms.properties.d/disable-activemq.properties" "org.opennms.activemq.broker.disable=true\n" -}}
+{{- /* Karaf featuresBoot — disable the JMS IPC features, enable Kafka.
+       Mirrors charts/minion/templates/minion-config-templates.yaml without the
+       Minion-specific !minion-jms line. */ -}}
+{{- $_ := set $files "featuresBoot.d/kafka-ipc.boot" "!opennms-core-ipc-jms\nopennms-core-ipc-kafka\n" -}}
+{{- $_ := set $files "featuresBoot.d/kafka-rpc.boot" "!opennms-core-ipc-rpc-jms\nopennms-core-ipc-rpc-kafka\n" -}}
+{{- $_ := set $files "featuresBoot.d/kafka-sink.boot" "!opennms-core-ipc-sink-camel\nopennms-core-ipc-sink-kafka\n" -}}
+{{- $_ := set $files "featuresBoot.d/kafka-twin.boot" "!opennms-core-ipc-twin-jms\nopennms-core-ipc-twin-kafka\n" -}}
 {{- end }}
 
 {{- if .Values.elasticsearch.enabled }}

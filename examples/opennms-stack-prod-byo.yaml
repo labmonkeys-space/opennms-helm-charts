@@ -14,10 +14,6 @@
 #     Type: Opaque
 #     Keys: OPENNMS_HTTP_USER, OPENNMS_HTTP_PASS
 #
-#   Secret: opennms-broker
-#     Type: Opaque
-#     Keys: OPENNMS_BROKER_USER, OPENNMS_BROKER_PASS
-#
 # Plus reachable Postgres, Kafka, and Elasticsearch endpoints — the chart
 # does NOT deploy any of those.
 #
@@ -66,8 +62,6 @@ sentinel:
   opennms:
     http:
       existingSecret: opennms-http
-    broker:
-      existingSecret: opennms-broker
   resources:
     requests:
       cpu: 500m
