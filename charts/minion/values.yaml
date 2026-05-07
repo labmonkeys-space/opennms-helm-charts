@@ -103,15 +103,12 @@ prometheus:
     enabled: false
     port: 9299
 
-# Credentials Minion uses to register with Core. The container's `-c` startup
-# mode reads these env vars and persists them into the SCV keystore. Both
-# Secrets MUST exist before install.
+# Credentials Minion uses to register with Core's REST API. The container's
+# `-c` startup mode reads these env vars and persists them into the SCV
+# keystore. The Secret MUST exist before install.
 opennms:
   http:
     # Secret keys: OPENNMS_HTTP_USER, OPENNMS_HTTP_PASS
-    existingSecret: ""
-  broker:
-    # Secret keys: OPENNMS_BROKER_USER, OPENNMS_BROKER_PASS
     existingSecret: ""
 
 # BYO Kafka. The chart NEVER deploys Kafka. Renders all three of

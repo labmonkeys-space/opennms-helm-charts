@@ -63,5 +63,3 @@ sentinel:
   opennms:
     http:
       existingSecret: opennms-http
-    broker:
-      existingSecret: opennms-broker

@@ -14,7 +14,7 @@ maintainers:
 type: application
 
 # Bump this version whenever any pinned subchart version changes.
-version: 0.1.0
+version: 0.2.0
 
 # Lock-step with the bundled OpenNMS components (Core and Sentinel both run
 # this version of Horizon).
@@ -25,8 +25,8 @@ appVersion: "35.0.5"
 # features — is enforced here at the umbrella level.
 dependencies:
   - name: core
-    version: "=0.1.0"
+    version: "=0.2.0"
     repository: file://../core
   - name: sentinel
-    version: "=0.1.0"
+    version: "=0.2.0"
     repository: file://../sentinel

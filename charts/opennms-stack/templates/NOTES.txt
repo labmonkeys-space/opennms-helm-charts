@@ -31,7 +31,6 @@ And these Secrets in namespace {{ .Release.Namespace }}:
     keys: ELASTIC_USERNAME, ELASTIC_PASSWORD
 
   sentinel.opennms.http.existingSecret    keys: OPENNMS_HTTP_USER, OPENNMS_HTTP_PASS
-  sentinel.opennms.broker.existingSecret  keys: OPENNMS_BROKER_USER, OPENNMS_BROKER_PASS
 
 ==============================================================================
 Deploying Minion at a remote location
@@ -42,8 +41,7 @@ The Minion chart is a separate release per location. From any cluster:
     --set location=nyc \
     --set instanceId={{ .Values.global.instanceId }} \
     --set kafka.bootstrapServers={{ .Values.global.kafka.bootstrapServers | default "<your kafka>" }} \
-    --set opennms.http.existingSecret=onms-http \
-    --set opennms.broker.existingSecret=onms-broker
+    --set opennms.http.existingSecret=onms-http
 
 ==============================================================================
 Verify

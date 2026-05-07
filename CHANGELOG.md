@@ -8,6 +8,23 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). All
 
 (no unreleased changes yet)
 
+## [0.2.0] — 2026-05-07
+
+### Added
+
+- **`core`** — when `kafka.bootstrapServers` is set, the chart now auto-emits the full Kafka-IPC scaffolding into the etc-overlay: `opennms.properties.d/disable-activemq.properties` (sets `org.opennms.activemq.broker.disable=true`) and `featuresBoot.d/kafka-{ipc,rpc,sink,twin}.boot` (disable JMS IPC features, enable Kafka). Mirrors what the `minion` chart has done since 0.1.0. Removes the manual-`extraConfigFiles` boilerplate previously needed to put a Kafka-only Core into a working state.
+
+### Removed
+
+- **`sentinel`, `minion`** — removed `opennms.broker.existingSecret` from values, templates (`OPENNMS_BROKER_USER/PASS` env injection), `NOTES.txt`, READMEs, and example files. The chart has been Apache-Kafka-only since 0.1.0 (per the top-level README); the broker-secret wiring was vestigial — Sentinel and Minion only use `opennms.http.existingSecret` to authenticate to Core's REST API. Existing values files with `opennms.broker:` set will be silently ignored (Helm does not enforce the values schema).
+- **`opennms-stack`** — removed `sentinel.opennms.broker.*` references from `NOTES.txt` and the two umbrella examples (`examples/opennms-stack-prod-byo.yaml`, `examples/opennms-stack-with-prometheus.yaml`).
+
+### Changed
+
+- **All four charts** — strict-pin cascade: `core`, `sentinel`, `minion`, and `opennms-stack` all bump from `0.1.0` to `0.2.0`. Umbrella `Chart.lock` regenerated.
+
+[0.2.0]: https://github.com/labmonkeys-space/opennms-helm-charts/compare/v0.1.0...v0.2.0
+
 ## [0.1.0] — 2026-04-30
 
 First published release of the OpenNMS Helm Charts.
@@ -34,5 +51,5 @@ First published release of the OpenNMS Helm Charts.
 - `core.postgresql.host` defaults to a CNPG-specific hostname (`cluster-helm-lint-rw.default.svc.cluster.local`) used by the in-repo chart-testing flow. Production users must set `postgresql.host` explicitly — the chart fails template-time on missing host.
 - The optional `prometheus-remote-writer` plugin is downloaded from GitHub Releases at every pod start when enabled. Air-gapped clusters override `prometheusRemoteWriter.kar.url` to an internal mirror.
 
-[Unreleased]: https://github.com/labmonkeys-space/opennms-helm-charts/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/labmonkeys-space/opennms-helm-charts/compare/v0.2.0...HEAD
 [0.1.0]: https://github.com/labmonkeys-space/opennms-helm-charts/releases/tag/v0.1.0

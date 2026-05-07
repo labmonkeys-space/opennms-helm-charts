@@ -219,8 +219,8 @@ existingSecret is set), Kafka SASL (when enabled), Elasticsearch (when set).
 {{/*
 Env vars for the runtime container that drive the Sentinel entrypoint:
 - SENTINEL_LOCATION: written by entrypoint into controller.cfg
-- OPENNMS_HTTP_USER/PASS, OPENNMS_BROKER_USER/PASS: stored in SCV keystore
-  by the entrypoint's `-c` mode at startup
+- OPENNMS_HTTP_USER/PASS: stored in SCV keystore by the entrypoint's `-c`
+  mode at startup; used by Sentinel for Core REST API calls.
 The instance ID is rendered into instance-id.properties via the etc-overlay,
 not via env var.
 */}}
@@ -249,18 +249,6 @@ not via env var.
       name: {{ .Values.opennms.http.existingSecret | quote }}
       key: OPENNMS_HTTP_PASS
 {{- end }}
-{{- if .Values.opennms.broker.existingSecret }}
-- name: OPENNMS_BROKER_USER
-  valueFrom:
-    secretKeyRef:
-      name: {{ .Values.opennms.broker.existingSecret | quote }}
-      key: OPENNMS_BROKER_USER
-- name: OPENNMS_BROKER_PASS
-  valueFrom:
-    secretKeyRef:
-      name: {{ .Values.opennms.broker.existingSecret | quote }}
-      key: OPENNMS_BROKER_PASS
-{{- end }}
 {{- end }}
 
 {{/*
@@ -268,5 +256,5 @@ Sentinel's startup arg. Use `-c` when SCV credentials are sourced from env
 vars, `-f` otherwise (lab mode without auth).
 */}}
 {{- define "sentinel.startupArg" -}}
-{{- if or .Values.opennms.http.existingSecret .Values.opennms.broker.existingSecret -}}-c{{- else -}}-f{{- end -}}
+{{- if .Values.opennms.http.existingSecret -}}-c{{- else -}}-f{{- end -}}
 {{- end }}

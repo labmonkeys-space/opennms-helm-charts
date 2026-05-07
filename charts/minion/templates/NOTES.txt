@@ -31,13 +31,13 @@ deploy Kafka.
 For PRODUCTION, set these values to reference Secrets you manage:
 
   opennms.http.existingSecret         keys: OPENNMS_HTTP_USER, OPENNMS_HTTP_PASS
-  opennms.broker.existingSecret       keys: OPENNMS_BROKER_USER, OPENNMS_BROKER_PASS
   kafka.auth.existingSecret           keys: KAFKA_USERNAME, KAFKA_PASSWORD
                                       (only when kafka.auth.enabled=true)
 
-The HTTP and broker credentials are persisted into Minion's SCV keystore at
-container start (entrypoint mode `-c`). When neither is set, the chart starts
-Minion in `-f` mode (no SCV registration) — useful for local lab installs.
+The HTTP credentials are persisted into Minion's SCV keystore at container
+start (entrypoint mode `-c`); they're used by Minion for Core REST API calls.
+When unset, the chart starts Minion in `-f` mode (no SCV registration) —
+useful for local lab installs.
 
 ==============================================================================
 3. The chart uses an etc-overlay, not confd

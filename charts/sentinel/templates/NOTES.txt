@@ -21,15 +21,15 @@ For PRODUCTION, set these values to reference Secrets you manage:
 
   postgresql.auth.existingSecret      keys: OPENNMS_DBUSER, OPENNMS_DBPASS
   opennms.http.existingSecret         keys: OPENNMS_HTTP_USER, OPENNMS_HTTP_PASS
-  opennms.broker.existingSecret       keys: OPENNMS_BROKER_USER, OPENNMS_BROKER_PASS
   kafka.auth.existingSecret           keys: KAFKA_USERNAME, KAFKA_PASSWORD
                                       (only when kafka.auth.enabled=true)
   elasticsearch.auth.existingSecret   keys: ELASTIC_USERNAME, ELASTIC_PASSWORD
                                       (only when ES needs auth)
 
-The HTTP and broker credentials are persisted into Sentinel's SCV keystore at
-container start (entrypoint mode `-c`). When neither is set, the chart starts
-Sentinel in `-f` mode (no SCV registration) — useful for local lab installs.
+The HTTP credentials are persisted into Sentinel's SCV keystore at container
+start (entrypoint mode `-c`); they're used by Sentinel for Core REST API
+calls. When unset, the chart starts Sentinel in `-f` mode (no SCV
+registration) — useful for local lab installs.
 
 ==============================================================================
 3. The chart uses an etc-overlay, not confd
