@@ -23,6 +23,11 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). All
 
 - **All four charts** — strict-pin cascade: `core`, `sentinel`, `minion`, and `opennms-stack` all bump from `0.1.0` to `0.2.0`. Umbrella `Chart.lock` regenerated.
 
+### Breaking changes (upgrade impact for 0.1.0 → 0.2.0 users)
+
+- **`core` — embedded ActiveMQ broker no longer listens on port 61616 when `kafka.bootstrapServers` is set.** The new `disable-activemq.properties` overlay file sets `org.opennms.activemq.broker.disable=true`, so any north-bound JMS integrations or external ActiveMQ consumers pointing at the in-pod broker will lose their listener on upgrade. Operators who require both Kafka IPC *and* the embedded broker (e.g., during a JMS-to-Kafka migration) can override the file via `extraConfigFiles."opennms.properties.d/disable-activemq.properties": ""`.
+- **`sentinel`, `minion` — broker-only credential users silently drop from `-c` to `-f` startup mode.** The startup-arg gate previously fired on `or http broker`; it now fires on `http` alone. Users who supplied ONLY `opennms.broker.existingSecret` (no `opennms.http.existingSecret`) were registering with Core via the SCV keystore on 0.1.0 and will fall to `-f` (no SCV registration / lab mode) on 0.2.0. Set `opennms.http.existingSecret` to restore `-c` mode.
+
 [0.2.0]: https://github.com/labmonkeys-space/opennms-helm-charts/compare/v0.1.0...v0.2.0
 
 ## [0.1.0] — 2026-04-30

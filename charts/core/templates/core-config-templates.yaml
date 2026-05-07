@@ -54,7 +54,10 @@
 {{- end }}
 
 {{- /* User-supplied additions / overrides. Keys are natural POSIX paths
-       relative to etc/. */ -}}
+       relative to etc/. The chart's encoded keys above will be overridden
+       if the user sets the same path — e.g., setting
+       `extraConfigFiles."opennms.properties.d/disable-activemq.properties": ""`
+       re-enables the embedded ActiveMQ broker alongside Kafka IPC. */ -}}
 {{- range $path, $content := .Values.extraConfigFiles -}}
 {{- $_ := set $files $path $content -}}
 {{- end }}
