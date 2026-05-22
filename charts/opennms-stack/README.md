@@ -1,69 +1,11 @@
 # opennms-stack
 
-![Version: 0.2.0](https://img.shields.io/badge/Version-0.2.0-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: 35.0.5](https://img.shields.io/badge/AppVersion-35.0.5-informational?style=flat-square)
+![Version: 0.3.0](https://img.shields.io/badge/Version-0.3.0-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: 35.0.5](https://img.shields.io/badge/AppVersion-35.0.5-informational?style=flat-square)
 
 Umbrella Helm chart bundling OpenNMS Horizon Core and Sentinel for the
 central OpenNMS site. Connects to BYO Postgres, Kafka, and Elasticsearch.
 Minion is deployed independently per remote location and is NOT part of
 this umbrella.
-
-## Upgrading from 0.2.0
-
-Version 0.3.0 introduces a **breaking change** to the Postgres credential
-surface: the single `global.postgresql.auth.existingSecret` field is removed
-and replaced by two structured references — `superuserSecret` and `appSecret`
-— each with operator-configurable key names. The new shape consumes
-CNPG-generated Secrets directly without transformation.
-
-### Migration paths
-
-**You use CNPG (or any operator that generates `username` / `password`
-Secrets):** point each block at the corresponding Secret. Defaults handle the
-key names.
-
-```yaml
-global:
-  postgresql:
-    auth:
-      superuserSecret:
-        name: pg-cluster-mysite-superuser
-      appSecret:
-        name: pg-cluster-mysite-app
-```
-
-**You have an existing 0.2.0 Secret with the four legacy keys:** keep the
-Secret unchanged, point both blocks at it with explicit key overrides.
-
-```yaml
-global:
-  postgresql:
-    auth:
-      superuserSecret:
-        name: my-existing-secret
-        userKey: POSTGRES_USER
-        passwordKey: POSTGRES_PASSWORD
-      appSecret:
-        name: my-existing-secret
-        userKey: OPENNMS_DBUSER
-        passwordKey: OPENNMS_DBPASS
-```
-
-**You relied on lab-mode (no operator Secret):** values keep working. Core
-now renders two release-scoped Secrets (`<release>-opennms-pg-superuser`
-and `<release>-opennms-pg-app`) instead of one (`<release>-core-credentials`).
-Sentinel under the umbrella inherits the rendered app Secret automatically.
-
-The two lab-mode renders are **independent** — each fires only when its
-corresponding `<role>Secret.name` is empty. You can migrate one role at a
-time (e.g. set `appSecret.name` to a production CNPG Secret while leaving
-`superuserSecret` on the lab default during initial bootstrap).
-
-### Also new in 0.3.0
-
-- `sentinel.elasticsearch.enableForwarding` (default `true`) — explicit
-  master switch rendered into the flow-persistence cfg.
-- `core.elasticsearch` gains `replicas`, `connTimeout`, `readTimeout`, and
-  `enableForwarding` for parity with Sentinel's surface.
 
 ## Maintainers
 
@@ -75,8 +17,8 @@ time (e.g. set `appSecret.name` to a production CNPG Secret while leaving
 
 | Repository | Name | Version |
 |------------|------|---------|
-| file://../core | core | =0.2.0 |
-| file://../sentinel | sentinel | =0.2.0 |
+| file://../core | core | =0.3.0 |
+| file://../sentinel | sentinel | =0.3.0 |
 
 ## Values
 
@@ -87,7 +29,13 @@ time (e.g. set `appSecret.name` to a production CNPG Secret while leaving
 | global.elasticsearch.url | string | `""` |  |
 | global.instanceId | string | `"OpenNMS"` |  |
 | global.kafka.bootstrapServers | string | `""` |  |
-| global.postgresql.auth.existingSecret | string | `""` |  |
+| global.opennmsStack | bool | `true` |  |
+| global.postgresql.auth.appSecret.name | string | `""` |  |
+| global.postgresql.auth.appSecret.passwordKey | string | `"password"` |  |
+| global.postgresql.auth.appSecret.userKey | string | `"username"` |  |
+| global.postgresql.auth.superuserSecret.name | string | `""` |  |
+| global.postgresql.auth.superuserSecret.passwordKey | string | `"password"` |  |
+| global.postgresql.auth.superuserSecret.userKey | string | `"username"` |  |
 | global.postgresql.database | string | `"opennms"` |  |
 | global.postgresql.host | string | `""` |  |
 | global.postgresql.port | int | `5432` |  |

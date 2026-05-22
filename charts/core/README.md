@@ -1,20 +1,8 @@
 # core
 
-![Version: 0.2.0](https://img.shields.io/badge/Version-0.2.0-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: 35.0.5](https://img.shields.io/badge/AppVersion-35.0.5-informational?style=flat-square)
+![Version: 0.3.0](https://img.shields.io/badge/Version-0.3.0-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: 35.0.5](https://img.shields.io/badge/AppVersion-35.0.5-informational?style=flat-square)
 
 A Helm chart for Kubernetes
-
-## Upgrading from 0.2.0
-
-`postgresql.auth.existingSecret` is removed in 0.3.0. Use the two structured
-references `postgresql.auth.superuserSecret` and `postgresql.auth.appSecret`
-instead — each accepts `name`, `userKey` (default `username`), and
-`passwordKey` (default `password`). See the umbrella `opennms-stack` README
-for migration examples covering CNPG-shaped Secrets and the legacy
-four-key shape.
-
-`elasticsearch` gains `replicas`, `connTimeout`, `readTimeout`, and
-`enableForwarding` for parity with Sentinel's flow-persistence surface.
 
 ## Maintainers
 
@@ -34,8 +22,12 @@ four-key shape.
 | configRenderer.image.repository | string | `"docker.io/alpine"` |  |
 | configRenderer.image.tag | string | `"3.19"` |  |
 | elasticsearch.auth.existingSecret | string | `""` |  |
+| elasticsearch.connTimeout | int | `30000` |  |
+| elasticsearch.enableForwarding | bool | `true` |  |
 | elasticsearch.enabled | bool | `false` |  |
 | elasticsearch.indexStrategy | string | `"monthly"` |  |
+| elasticsearch.readTimeout | int | `30000` |  |
+| elasticsearch.replicas | int | `1` |  |
 | elasticsearch.url | string | `""` |  |
 | extraConfigFiles | object | `{}` |  |
 | fullnameOverride | string | `""` |  |
@@ -81,10 +73,15 @@ four-key shape.
 | podAnnotations | object | `{}` |  |
 | podLabels | object | `{}` |  |
 | podSecurityContext | object | `{}` |  |
-| postgresql.auth.existingSecret | string | `""` |  |
+| postgresql.auth.appSecret.name | string | `""` |  |
+| postgresql.auth.appSecret.passwordKey | string | `"password"` |  |
+| postgresql.auth.appSecret.userKey | string | `"username"` |  |
 | postgresql.auth.password | string | `"Change_Me_OpenNMS_DBA"` |  |
 | postgresql.auth.superuserName | string | `"postgres"` |  |
 | postgresql.auth.superuserPassword | string | `"Change_Me_Postgres"` |  |
+| postgresql.auth.superuserSecret.name | string | `""` |  |
+| postgresql.auth.superuserSecret.passwordKey | string | `"password"` |  |
+| postgresql.auth.superuserSecret.userKey | string | `"username"` |  |
 | postgresql.auth.username | string | `"opennms_dba"` |  |
 | postgresql.database | string | `"opennms"` |  |
 | postgresql.host | string | `""` |  |
