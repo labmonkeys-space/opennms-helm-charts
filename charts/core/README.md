@@ -4,6 +4,18 @@
 
 A Helm chart for Kubernetes
 
+## Upgrading from 0.2.0
+
+`postgresql.auth.existingSecret` is removed in 0.3.0. Use the two structured
+references `postgresql.auth.superuserSecret` and `postgresql.auth.appSecret`
+instead — each accepts `name`, `userKey` (default `username`), and
+`passwordKey` (default `password`). See the umbrella `opennms-stack` README
+for migration examples covering CNPG-shaped Secrets and the legacy
+four-key shape.
+
+`elasticsearch` gains `replicas`, `connTimeout`, `readTimeout`, and
+`enableForwarding` for parity with Sentinel's flow-persistence surface.
+
 ## Maintainers
 
 | Name | Email | Url |

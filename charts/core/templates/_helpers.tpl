@@ -104,21 +104,135 @@ Postgres connectivity — resolves global vs local for each field.
 {{- end }}
 
 {{/*
-Postgres existingSecret — resolves global vs local. Empty string means the
-chart will render a lab-mode Secret instead.
+Elasticsearch connectivity — resolves global vs local. Mirrors the Sentinel
+chart's pattern so global.elasticsearch.* flows into Core when its optional
+flow-persistence path is enabled.
 */}}
-{{- define "core.postgresExistingSecret" -}}
-{{- $global := ((((.Values.global).postgresql).auth).existingSecret) | default "" -}}
-{{- if $global -}}{{ $global }}{{- else -}}{{ .Values.postgresql.auth.existingSecret }}{{- end -}}
+{{- define "core.elasticsearchUrl" -}}
+{{- $global := (((.Values.global).elasticsearch).url) | default "" -}}
+{{- if $global -}}{{ $global }}{{- else -}}{{ .Values.elasticsearch.url }}{{- end -}}
+{{- end }}
+
+{{- define "core.elasticsearchExistingSecret" -}}
+{{- $global := ((((.Values.global).elasticsearch).auth).existingSecret) | default "" -}}
+{{- if $global -}}{{ $global }}{{- else -}}{{ .Values.elasticsearch.auth.existingSecret }}{{- end -}}
 {{- end }}
 
 {{/*
-Returns the Secret name to use for Postgres credentials. Either the user's
-existingSecret or the chart-managed lab-mode Secret.
+Postgres superuser Secret reference — global > local > lab-mode fallback.
+The lab-mode Secret `<release>-opennms-pg-superuser` is rendered by
+core-pg-superuser-credentials.yaml when both global and local names are empty.
+Note: lab-mode Secret name is release-scoped (not chart-scoped) so Sentinel
+under the umbrella can synthesise the same name from .Release.Name alone.
 */}}
-{{- define "core.postgresSecretName" -}}
-{{- $existing := include "core.postgresExistingSecret" . -}}
-{{- if $existing -}}{{ $existing }}{{- else -}}{{ include "core.fullname" . }}-credentials{{- end -}}
+{{- define "core.postgresSuperuserSecretName" -}}
+{{- $global := (((((.Values.global).postgresql).auth).superuserSecret).name) | default "" -}}
+{{- $local := (((.Values.postgresql.auth).superuserSecret).name) | default "" -}}
+{{- if $global -}}{{ $global }}
+{{- else if $local -}}{{ $local }}
+{{- else -}}{{ .Release.Name }}-opennms-pg-superuser
+{{- end -}}
+{{- end }}
+
+{{- define "core.postgresSuperuserUserKey" -}}
+{{- $global := (((((.Values.global).postgresql).auth).superuserSecret).name) | default "" -}}
+{{- $local := (((.Values.postgresql.auth).superuserSecret).name) | default "" -}}
+{{- if $global -}}{{ (((((.Values.global).postgresql).auth).superuserSecret).userKey) | default "username" }}
+{{- else if $local -}}{{ (((.Values.postgresql.auth).superuserSecret).userKey) | default "username" }}
+{{- else -}}username
+{{- end -}}
+{{- end }}
+
+{{- define "core.postgresSuperuserPasswordKey" -}}
+{{- $global := (((((.Values.global).postgresql).auth).superuserSecret).name) | default "" -}}
+{{- $local := (((.Values.postgresql.auth).superuserSecret).name) | default "" -}}
+{{- if $global -}}{{ (((((.Values.global).postgresql).auth).superuserSecret).passwordKey) | default "password" }}
+{{- else if $local -}}{{ (((.Values.postgresql.auth).superuserSecret).passwordKey) | default "password" }}
+{{- else -}}password
+{{- end -}}
+{{- end }}
+
+{{/*
+Postgres app-role Secret reference — global > local > lab-mode fallback.
+The lab-mode Secret `<release>-opennms-pg-app` is rendered by
+core-pg-app-credentials.yaml when both global and local names are empty.
+Note: lab-mode Secret name is release-scoped (not chart-scoped) so Sentinel
+under the umbrella can synthesise the same name from .Release.Name alone.
+*/}}
+{{- define "core.postgresAppSecretName" -}}
+{{- $global := (((((.Values.global).postgresql).auth).appSecret).name) | default "" -}}
+{{- $local := (((.Values.postgresql.auth).appSecret).name) | default "" -}}
+{{- if $global -}}{{ $global }}
+{{- else if $local -}}{{ $local }}
+{{- else -}}{{ .Release.Name }}-opennms-pg-app
+{{- end -}}
+{{- end }}
+
+{{- define "core.postgresAppUserKey" -}}
+{{- $global := (((((.Values.global).postgresql).auth).appSecret).name) | default "" -}}
+{{- $local := (((.Values.postgresql.auth).appSecret).name) | default "" -}}
+{{- if $global -}}{{ (((((.Values.global).postgresql).auth).appSecret).userKey) | default "username" }}
+{{- else if $local -}}{{ (((.Values.postgresql.auth).appSecret).userKey) | default "username" }}
+{{- else -}}username
+{{- end -}}
+{{- end }}
+
+{{- define "core.postgresAppPasswordKey" -}}
+{{- $global := (((((.Values.global).postgresql).auth).appSecret).name) | default "" -}}
+{{- $local := (((.Values.postgresql.auth).appSecret).name) | default "" -}}
+{{- if $global -}}{{ (((((.Values.global).postgresql).auth).appSecret).passwordKey) | default "password" }}
+{{- else if $local -}}{{ (((.Values.postgresql.auth).appSecret).passwordKey) | default "password" }}
+{{- else -}}password
+{{- end -}}
+{{- end }}
+
+{{/*
+Returns "true" when no superuserSecret is configured and the chart should
+render the lab-mode Secret `<fullname>-pg-superuser`. Returns "" otherwise.
+*/}}
+{{- define "core.postgresSuperuserLabMode" -}}
+{{- $global := (((((.Values.global).postgresql).auth).superuserSecret).name) | default "" -}}
+{{- $local := (((.Values.postgresql.auth).superuserSecret).name) | default "" -}}
+{{- if and (not $global) (not $local) -}}true{{- end -}}
+{{- end }}
+
+{{/*
+Returns "true" when no appSecret is configured and the chart should render
+the lab-mode Secret `<fullname>-pg-app`. Returns "" otherwise.
+*/}}
+{{- define "core.postgresAppLabMode" -}}
+{{- $global := (((((.Values.global).postgresql).auth).appSecret).name) | default "" -}}
+{{- $local := (((.Values.postgresql.auth).appSecret).name) | default "" -}}
+{{- if and (not $global) (not $local) -}}true{{- end -}}
+{{- end }}
+
+{{/*
+Four `env:` entries projecting the Postgres env vars Core expects, sourced
+from superuserSecret and appSecret with operator-configurable key names.
+Used at both consumption sites (init container and runtime container) in
+statefulset.yaml.
+*/}}
+{{- define "core.postgresEnv" -}}
+- name: POSTGRES_USER
+  valueFrom:
+    secretKeyRef:
+      name: {{ include "core.postgresSuperuserSecretName" . | quote }}
+      key: {{ include "core.postgresSuperuserUserKey" . | quote }}
+- name: POSTGRES_PASSWORD
+  valueFrom:
+    secretKeyRef:
+      name: {{ include "core.postgresSuperuserSecretName" . | quote }}
+      key: {{ include "core.postgresSuperuserPasswordKey" . | quote }}
+- name: OPENNMS_DBUSER
+  valueFrom:
+    secretKeyRef:
+      name: {{ include "core.postgresAppSecretName" . | quote }}
+      key: {{ include "core.postgresAppUserKey" . | quote }}
+- name: OPENNMS_DBPASS
+  valueFrom:
+    secretKeyRef:
+      name: {{ include "core.postgresAppSecretName" . | quote }}
+      key: {{ include "core.postgresAppPasswordKey" . | quote }}
 {{- end }}
 
 {{/*
@@ -223,16 +337,17 @@ auth when enabled.
       name: {{ .Values.kafka.auth.existingSecret | quote }}
       key: KAFKA_PASSWORD
 {{- end }}
-{{- if and .Values.elasticsearch.enabled .Values.elasticsearch.auth.existingSecret }}
+{{- $esSecret := include "core.elasticsearchExistingSecret" . -}}
+{{- if and .Values.elasticsearch.enabled $esSecret }}
 - name: ELASTIC_USERNAME
   valueFrom:
     secretKeyRef:
-      name: {{ .Values.elasticsearch.auth.existingSecret | quote }}
+      name: {{ $esSecret | quote }}
       key: ELASTIC_USERNAME
 - name: ELASTIC_PASSWORD
   valueFrom:
     secretKeyRef:
-      name: {{ .Values.elasticsearch.auth.existingSecret | quote }}
+      name: {{ $esSecret | quote }}
       key: ELASTIC_PASSWORD
 {{- end }}
 {{- if and .Values.prometheusRemoteWriter.enabled .Values.prometheusRemoteWriter.auth.existingSecret }}

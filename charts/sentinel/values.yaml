@@ -105,15 +105,32 @@ opennms:
 # BYO Postgres for Sentinel's distributed datasource. Sentinel writes flow
 # state to the same database Core uses. The chart NEVER deploys Postgres.
 #
-# `auth.existingSecret` SHOULD reference the same Secret used by Core so a
-# single set of credentials covers both. Required keys:
-#   OPENNMS_DBUSER, OPENNMS_DBPASS
+# Sentinel consumes ONLY the application-role credentials via `appSecret`.
+# `superuserSecret` is accepted in the values surface for parity with Core
+# (so the same global block flows through both subcharts) but is silently
+# IGNORED on Sentinel.
+#
+# `appSecret` defaults to CNPG-shaped Secrets (keys `username` / `password`).
+#
+# Standalone Sentinel installs MUST set `appSecret.name`. Under the
+# `opennms-stack` umbrella, Sentinel falls through to Core's lab-mode app
+# Secret (`<core-fullname>-pg-app`) when no operator Secret is supplied.
 postgresql:
   host: ""
   port: 5432
   database: opennms
   auth:
-    existingSecret: ""
+    # Accepted for parity with Core but silently ignored on Sentinel.
+    superuserSecret:
+      name: ""
+      userKey: username
+      passwordKey: password
+    # Application-role credentials. Sentinel projects OPENNMS_DBUSER and
+    # OPENNMS_DBPASS into its envsubst init container from these keys.
+    appSecret:
+      name: ""
+      userKey: username
+      passwordKey: password
 
 # BYO Kafka. The chart NEVER deploys Kafka. Renders
 # org.opennms.core.ipc.sink.kafka.cfg into the etc-overlay.
@@ -141,6 +158,11 @@ elasticsearch:
   connTimeout: 30000
   readTimeout: 30000
   replicas: 1
+  # Master switch rendered as `enableForwarding=<value>` into the
+  # org.opennms.features.flows.persistence.elastic.cfg file. When false,
+  # the cfg is still rendered but OpenNMS skips the persistence step.
+  # Set to false for debug scenarios; leave true for normal operation.
+  enableForwarding: true
   auth:
     # Secret keys: ELASTIC_USERNAME, ELASTIC_PASSWORD
     existingSecret: ""

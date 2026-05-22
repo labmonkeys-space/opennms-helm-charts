@@ -1,21 +1,22 @@
 # Values for chart-testing (`ct install --charts charts/opennms-stack`).
 #
 # ct creates an ephemeral random namespace per release. Kubernetes Secret
-# references cannot cross namespaces, so we cannot use the existingSecret
-# pattern here — the Secret would live in `default` (where the stubs go) but
-# the pods would live in the random namespace.
+# references cannot cross namespaces, so operator-supplied Secrets in
+# `default` are not reachable from the random ct namespace.
 #
-# For ct testing we therefore exercise Core's lab-mode (chart-managed Secret
-# co-located with the release). Sentinel skips its datasource.cfg when no
-# existingSecret is configured; Karaf still boots enough for the karaf-port
-# smoke test to pass. Production deployments use the existingSecret path —
-# see the chart README and CONTRIBUTING.md.
+# This test exercises the umbrella lab-mode end-to-end: Core renders two
+# lab-mode Secrets (<release>-core-pg-superuser and <release>-core-pg-app),
+# and Sentinel falls through to <release>-core-pg-app for its appSecret.
+# Both subcharts render their full configs and Karaf boots in both pods.
+#
+# Operator-supplied Secret paths (CNPG-shaped Secrets with userKey/
+# passwordKey overrides) are exercised by helm-template tests in CI; see
+# section 6 of the change tasks.
 
 global:
   postgresql:
     host: cluster-helm-lint-rw.default.svc.cluster.local
-    # No existingSecret here — Core renders a lab-mode Secret with the
-    # inline credentials set under `core.postgresql.auth.*` below.
+    # superuserSecret.name and appSecret.name left empty — lab-mode.
   kafka:
     bootstrapServers: kafka.default.svc.cluster.local:9092
   elasticsearch:
@@ -25,7 +26,8 @@ core:
   postgresql:
     auth:
       # Lab-mode credentials matching the CNPG superuser/db set up by
-      # `make install-postgres`.
+      # `make install-postgres`. These become the `username` / `password`
+      # entries of the rendered lab-mode Secrets.
       superuserName: postgres
       superuserPassword: Change_Me_Postgres
       username: opennms_dba
@@ -38,3 +40,5 @@ sentinel:
   replicaCount: 1
   # No HTTP/broker existingSecret → Sentinel starts in `-f` mode (no SCV
   # registration). Sufficient for the karaf-port smoke test.
+  # Sentinel inherits global.postgresql and falls through to Core's lab-mode
+  # app Secret automatically via the umbrella context (.Values.global is set).

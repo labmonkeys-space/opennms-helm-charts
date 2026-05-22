@@ -84,9 +84,44 @@ opennms-stack umbrella, .Values.global.* takes precedence over the local key.
 {{- if $global -}}{{ $global }}{{- else -}}{{ .Values.postgresql.database }}{{- end -}}
 {{- end }}
 
-{{- define "sentinel.postgresExistingSecret" -}}
-{{- $global := ((((.Values.global).postgresql).auth).existingSecret) | default "" -}}
-{{- if $global -}}{{ $global }}{{- else -}}{{ .Values.postgresql.auth.existingSecret }}{{- end -}}
+{{/*
+Postgres app-role Secret reference. Resolution order:
+  1. global.postgresql.auth.appSecret.name (set by the umbrella operator)
+  2. .Values.postgresql.auth.appSecret.name (set by the Sentinel operator)
+  3. Umbrella fall-through: when installed under opennms-stack with no
+     operator Secret, Core renders a release-scoped lab-mode Secret named
+     `<release>-opennms-pg-app`. Sentinel synthesises the same name from
+     .Release.Name. The umbrella is detected by `.Values.global.opennmsStack`
+     being truthy — a marker set explicitly in opennms-stack/values.yaml.
+     Standalone Sentinel installs do not have this marker set.
+  4. Standalone Sentinel with no fall-through: emit `fail`.
+*/}}
+{{- define "sentinel.postgresAppSecretName" -}}
+{{- $global := (((((.Values.global).postgresql).auth).appSecret).name) | default "" -}}
+{{- $local := (((.Values.postgresql.auth).appSecret).name) | default "" -}}
+{{- if $global -}}{{ $global }}
+{{- else if $local -}}{{ $local }}
+{{- else if ((.Values.global).opennmsStack) -}}{{ printf "%s-opennms-pg-app" .Release.Name }}
+{{- else -}}{{ fail "postgresql.auth.appSecret.name is required when installing the sentinel chart standalone. Install via the opennms-stack umbrella to inherit the Core lab-mode Secret automatically." }}
+{{- end -}}
+{{- end }}
+
+{{- define "sentinel.postgresAppUserKey" -}}
+{{- $global := (((((.Values.global).postgresql).auth).appSecret).name) | default "" -}}
+{{- $local := (((.Values.postgresql.auth).appSecret).name) | default "" -}}
+{{- if $global -}}{{ (((((.Values.global).postgresql).auth).appSecret).userKey) | default "username" }}
+{{- else if $local -}}{{ (((.Values.postgresql.auth).appSecret).userKey) | default "username" }}
+{{- else -}}username
+{{- end -}}
+{{- end }}
+
+{{- define "sentinel.postgresAppPasswordKey" -}}
+{{- $global := (((((.Values.global).postgresql).auth).appSecret).name) | default "" -}}
+{{- $local := (((.Values.postgresql.auth).appSecret).name) | default "" -}}
+{{- if $global -}}{{ (((((.Values.global).postgresql).auth).appSecret).passwordKey) | default "password" }}
+{{- else if $local -}}{{ (((.Values.postgresql.auth).appSecret).passwordKey) | default "password" }}
+{{- else -}}password
+{{- end -}}
 {{- end }}
 
 {{- define "sentinel.elasticsearchUrl" -}}
@@ -172,22 +207,22 @@ This helper is duplicated in core/ and minion/ — keep them in sync.
 {{- end }}
 
 {{/*
-Env vars for the envsubst init: Postgres credentials (always when
-existingSecret is set), Kafka SASL (when enabled), Elasticsearch (when set).
+Env vars for the envsubst init: Postgres credentials (when postgresHost is
+set — appSecret name + keys come from helpers above), Kafka SASL (when
+enabled), Elasticsearch (when set).
 */}}
 {{- define "sentinel.envsubstEnv" -}}
-{{- $pgSecret := include "sentinel.postgresExistingSecret" . -}}
-{{- if $pgSecret }}
+{{- if include "sentinel.postgresHost" . }}
 - name: OPENNMS_DBUSER
   valueFrom:
     secretKeyRef:
-      name: {{ $pgSecret | quote }}
-      key: OPENNMS_DBUSER
+      name: {{ include "sentinel.postgresAppSecretName" . | quote }}
+      key: {{ include "sentinel.postgresAppUserKey" . | quote }}
 - name: OPENNMS_DBPASS
   valueFrom:
     secretKeyRef:
-      name: {{ $pgSecret | quote }}
-      key: OPENNMS_DBPASS
+      name: {{ include "sentinel.postgresAppSecretName" . | quote }}
+      key: {{ include "sentinel.postgresAppPasswordKey" . | quote }}
 {{- end }}
 {{- if and .Values.kafka.auth.enabled .Values.kafka.auth.existingSecret }}
 - name: KAFKA_USERNAME

@@ -2,9 +2,13 @@
 #
 # Prerequisites in the install namespace:
 #
-#   Secret: opennms-postgres
+#   Secret: opennms-pg-superuser     (Postgres superuser — used by Core only)
 #     Type: Opaque
-#     Keys: POSTGRES_USER, POSTGRES_PASSWORD, OPENNMS_DBUSER, OPENNMS_DBPASS
+#     Keys: username, password       (CNPG-shaped; or override userKey/passwordKey below)
+#
+#   Secret: opennms-pg-app           (Postgres application role — used by Core + Sentinel)
+#     Type: Opaque
+#     Keys: username, password       (CNPG-shaped)
 #
 #   Secret: opennms-elastic
 #     Type: Opaque
@@ -19,7 +23,7 @@
 #
 # Install:
 #   helm install onms opennms-helm-charts/opennms-stack \
-#     --version 0.1.0 \
+#     --version 0.3.0 \
 #     -f examples/opennms-stack-prod-byo.yaml
 
 global:
@@ -30,7 +34,13 @@ global:
     port: 5432
     database: opennms
     auth:
-      existingSecret: opennms-postgres
+      superuserSecret:
+        name: opennms-pg-superuser
+        # userKey/passwordKey default to "username"/"password" (CNPG shape).
+        # Override here if your Secret uses different key names — e.g. the
+        # legacy 0.2.0 four-key shape uses POSTGRES_USER / POSTGRES_PASSWORD.
+      appSecret:
+        name: opennms-pg-app
 
   kafka:
     bootstrapServers: "kafka-0.kafka-headless.kafka.svc.cluster.local:9092,kafka-1.kafka-headless.kafka.svc.cluster.local:9092,kafka-2.kafka-headless.kafka.svc.cluster.local:9092"

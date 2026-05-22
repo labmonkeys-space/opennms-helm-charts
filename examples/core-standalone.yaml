@@ -19,9 +19,14 @@
 #
 # Prerequisites in the install namespace:
 #
-#   Secret: opennms-postgres
+#   Secret: opennms-pg-superuser   (Postgres superuser — schema bootstrap)
 #     Type: Opaque
-#     Keys: POSTGRES_USER, POSTGRES_PASSWORD, OPENNMS_DBUSER, OPENNMS_DBPASS
+#     Keys: username, password     (CNPG-shaped; override userKey/passwordKey
+#                                   below if your Secret uses different keys)
+#
+#   Secret: opennms-pg-app         (Postgres application role — runtime)
+#     Type: Opaque
+#     Keys: username, password
 #
 #   Secret: kafka-sasl  (only when kafka.auth.enabled = true)
 #     Type: Opaque
@@ -32,7 +37,7 @@
 #
 # Install:
 #   helm install onms opennms-helm-charts/core \
-#     --version 0.1.0 \
+#     --version 0.3.0 \
 #     -f examples/core-standalone.yaml
 
 postgresql:
@@ -40,7 +45,11 @@ postgresql:
   port: 5432
   database: opennms
   auth:
-    existingSecret: opennms-postgres
+    superuserSecret:
+      name: opennms-pg-superuser
+      # userKey/passwordKey default to "username"/"password" (CNPG shape).
+    appSecret:
+      name: opennms-pg-app
 
 # Kafka is only needed if you have Minions reporting to this Core.
 # Leave bootstrapServers empty for a fully isolated Core (no Minions).

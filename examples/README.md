@@ -8,7 +8,7 @@ chart repo or OCI artifacts.
 
 | File                                          | Chart            | Scenario                                                           |
 | --------------------------------------------- | ---------------- | ------------------------------------------------------------------ |
-| [`opennms-stack-prod-byo.yaml`](opennms-stack-prod-byo.yaml)         | `opennms-stack`  | Production-style central-site install with all credentials provided via `existingSecret` references |
+| [`opennms-stack-prod-byo.yaml`](opennms-stack-prod-byo.yaml)         | `opennms-stack`  | Production-style central-site install with all credentials provided via operator-managed Secrets (CNPG-shaped `superuserSecret` + `appSecret` for Postgres; `existingSecret` for ES / Kafka / HTTP) |
 | [`opennms-stack-with-prometheus.yaml`](opennms-stack-with-prometheus.yaml) | `opennms-stack`  | Same as above plus the `prometheus-remote-writer` plugin pointing at a Mimir/Cortex/VictoriaMetrics backend |
 | [`core-standalone.yaml`](core-standalone.yaml)               | `core`           | OpenNMS Core deployed by itself — no Sentinel sibling. For small-to-medium deployments or labs where dedicated flow processing isn't needed. |
 | [`minion-remote-location.yaml`](minion-remote-location.yaml)         | `minion`         | A Minion deployed to a remote site, talking to a central OpenNMS over BYO Kafka |
@@ -22,12 +22,12 @@ helm repo update
 # Pages-served chart repo
 helm install onms opennms-helm-charts/opennms-stack \
   -f examples/opennms-stack-prod-byo.yaml \
-  --version 0.1.0
+  --version 0.3.0
 
 # OCI registry
 helm install onms oci://ghcr.io/labmonkeys-space/charts/opennms-stack \
   -f examples/opennms-stack-prod-byo.yaml \
-  --version 0.1.0
+  --version 0.3.0
 ```
 
 ## Before installing
