@@ -9,7 +9,13 @@ annotations:
     - name: OpenNMS documentation
       url: https://docs.opennms.com/
   artifacthub.io/changes: |
+    - kind: changed
+      description: "BREAKING — global.postgresql.auth.existingSecret replaced by superuserSecret and appSecret blocks with operator-configurable key names. See the README upgrade notes."
     - kind: added
-      description: First published release. Umbrella over Core + Sentinel for the central OpenNMS site, with strict-pinned matched-pair subchart versions.
+      description: sentinel.elasticsearch.enableForwarding (default true) — explicit master switch rendered into the flow-persistence cfg.
+    - kind: added
+      description: core.elasticsearch gains replicas, connTimeout, readTimeout, and enableForwarding for parity with Sentinel's surface.
+    - kind: changed
+      description: Lab-mode now renders two release-scoped CNPG-shaped Secrets (<release>-opennms-pg-superuser and <release>-opennms-pg-app) instead of one combined Secret.
   artifacthub.io/operator: "false"
   artifacthub.io/prerelease: "false"

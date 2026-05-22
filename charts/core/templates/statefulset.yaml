@@ -83,8 +83,8 @@ spec:
           envFrom:
             - configMapRef:
                 name: {{ include "core.fullname" . }}-env
-            - secretRef:
-                name: {{ include "core.postgresSecretName" . }}
+          env:
+            {{- include "core.postgresEnv" . | nindent 12 }}
           volumeMounts:
             - name: confd-overlay
               mountPath: /opt/opennms/horizon-config.yaml
@@ -106,8 +106,8 @@ spec:
           envFrom:
             - configMapRef:
                 name: {{ include "core.fullname" . }}-env
-            - secretRef:
-                name: {{ include "core.postgresSecretName" . }}
+          env:
+            {{- include "core.postgresEnv" . | nindent 12 }}
           ports:
             - name: webui
               containerPort: 8980

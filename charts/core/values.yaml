@@ -184,13 +184,23 @@ prometheus:
 
 # BYO Postgres. This chart NEVER deploys Postgres.
 #
-# When `auth.existingSecret` is set, the chart references that Secret for the
-# four credential env vars. The Secret MUST contain these keys:
-#   POSTGRES_USER, POSTGRES_PASSWORD, OPENNMS_DBUSER, OPENNMS_DBPASS
+# Credentials are projected from two independent Kubernetes Secrets:
+#   - superuserSecret: used by Core at schema bootstrap and at runtime to
+#     project POSTGRES_USER and POSTGRES_PASSWORD.
+#   - appSecret: used by Core at runtime to project OPENNMS_DBUSER and
+#     OPENNMS_DBPASS (Sentinel also reads this one when installed).
 #
-# When `auth.existingSecret` is empty, the chart renders a Secret from the
-# inline values below. This lab-mode default is intended for the
-# `make test-install-core` flow against CNPG and SHOULD NOT be used in production.
+# Each block defaults to the CNPG-generated Secret shape (keys `username` and
+# `password`). Override userKey / passwordKey if your Secret uses different
+# key names (e.g. the legacy `POSTGRES_USER` / `POSTGRES_PASSWORD` shape).
+#
+# Lab-mode renders Secrets `<release>-opennms-pg-superuser` and
+# `<release>-opennms-pg-app` (release-scoped so Sentinel under the umbrella
+# inherits them automatically). The two lab-mode renders are **independent**:
+# each fires only when its corresponding `<role>Secret.name` is empty. This
+# lets you migrate one role at a time (e.g. set `appSecret.name` first while
+# `superuserSecret` still uses the inline lab default). Used by
+# `make test-install-core` against a kind-CNPG cluster; NOT for production.
 #
 # `host` MUST be set explicitly (no default) — the chart fails at template
 # time if unset. CI test values set this to the CNPG service name.
@@ -199,7 +209,21 @@ postgresql:
   port: 5432
   database: opennms
   auth:
-    existingSecret: ""
+    # Superuser credentials. CNPG generates a Secret per cluster named
+    # `<cluster>-superuser` with keys `username` / `password`.
+    superuserSecret:
+      name: ""
+      userKey: username
+      passwordKey: password
+    # Application-role credentials. CNPG generates a Secret per database role
+    # with the same `username` / `password` key shape.
+    appSecret:
+      name: ""
+      userKey: username
+      passwordKey: password
+    # Inline lab-mode values — used only when both superuserSecret.name and
+    # appSecret.name are empty. Each renders into one of the two lab-mode
+    # Secrets above.
     superuserName: postgres
     superuserPassword: "Change_Me_Postgres"
     username: opennms_dba
@@ -230,10 +254,24 @@ kafka:
 # BYO Elasticsearch (optional for Core). When enabled, Core's flow persistence
 # writes to the configured cluster. In typical deployments Sentinel handles
 # flow persistence; only set this if your Core directly persists flows.
+#
+# Surface mirrors Sentinel's flow-persistence block so the rendered
+# org.opennms.features.flows.persistence.elastic.cfg has identical shape
+# across both components.
 elasticsearch:
   enabled: false
   url: ""
   indexStrategy: monthly
+  # number_of_replicas applied to flow indices at creation.
+  replicas: 1
+  # Connection/read timeouts (ms) for the JEST client.
+  connTimeout: 30000
+  readTimeout: 30000
+  # Master switch: false renders the cfg with `enableForwarding=false`,
+  # which tells OpenNMS to skip the persistence step despite the cfg
+  # being present. Set to false for debug scenarios where you want the
+  # cfg rendered but no traffic to ES.
+  enableForwarding: true
   auth:
     # Secret must contain keys: ELASTIC_USERNAME, ELASTIC_PASSWORD
     existingSecret: ""

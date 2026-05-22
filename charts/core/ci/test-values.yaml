@@ -6,6 +6,11 @@ persistence:
   enabled: false
 
 # Point at the CNPG-managed Postgres set up by `make install-postgres`.
+# Lab-mode: superuserSecret and appSecret names are left empty, so the chart
+# renders <fullname>-pg-superuser and <fullname>-pg-app from the inline
+# credentials in values.yaml. The operator-supplied path (CNPG-shaped
+# Secrets with userKey/passwordKey overrides) is exercised by helm-template
+# tests; ct's ephemeral namespace prevents cross-namespace Secret refs here.
 postgresql:
   host: cluster-helm-lint-rw.default.svc.cluster.local
 

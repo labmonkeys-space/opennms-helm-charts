@@ -34,8 +34,9 @@
 {{- end }}
 
 {{- if .Values.elasticsearch.enabled }}
-{{- $esCfg := printf "elasticUrl=%s\nelasticIndexStrategy=%s\n" .Values.elasticsearch.url .Values.elasticsearch.indexStrategy -}}
-{{- if .Values.elasticsearch.auth.existingSecret -}}
+{{- $esCfg := printf "elasticUrl=%s\nelasticIndexStrategy=%s\nsettings.index.number_of_replicas=%v\nconnTimeout=%v\nreadTimeout=%v\nenableForwarding=%v\n" (include "core.elasticsearchUrl" .) .Values.elasticsearch.indexStrategy .Values.elasticsearch.replicas .Values.elasticsearch.connTimeout .Values.elasticsearch.readTimeout .Values.elasticsearch.enableForwarding -}}
+{{- $esSecret := include "core.elasticsearchExistingSecret" . -}}
+{{- if $esSecret -}}
 {{- $esCfg = printf "%selasticUser=${ELASTIC_USERNAME}\nelasticPassword=${ELASTIC_PASSWORD}\n" $esCfg -}}
 {{- end -}}
 {{- $_ := set $files "org.opennms.features.flows.persistence.elastic.cfg" $esCfg -}}

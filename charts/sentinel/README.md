@@ -4,6 +4,20 @@
 
 A Helm chart for Kubernetes
 
+## Upgrading from 0.2.0
+
+`postgresql.auth.existingSecret` is removed in 0.3.0. Set
+`postgresql.auth.appSecret.name` (and optionally `userKey` / `passwordKey`)
+to point Sentinel at its application-role Postgres Secret.
+
+Standalone Sentinel installs **must** set `appSecret.name`; rendering
+fails fast otherwise. Under the `opennms-stack` umbrella, Sentinel falls
+through to Core's lab-mode app Secret (`<release>-opennms-pg-app`) when no
+operator Secret is supplied.
+
+`elasticsearch.enableForwarding` (default `true`) is a new explicit master
+switch rendered into the flow-persistence cfg.
+
 ## Maintainers
 
 | Name | Email | Url |

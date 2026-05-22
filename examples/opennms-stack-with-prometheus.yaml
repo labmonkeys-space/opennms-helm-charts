@@ -26,7 +26,12 @@ global:
     port: 5432
     database: opennms
     auth:
-      existingSecret: opennms-postgres
+      # Two CNPG-shaped Secrets — see opennms-stack-prod-byo.yaml for the
+      # full prerequisite documentation and legacy 0.2.0 override forms.
+      superuserSecret:
+        name: opennms-pg-superuser
+      appSecret:
+        name: opennms-pg-app
 
   kafka:
     bootstrapServers: "kafka-0.kafka-headless.kafka.svc.cluster.local:9092"

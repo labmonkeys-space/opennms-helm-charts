@@ -7,22 +7,40 @@
 
 # Shared values consumed by the core and sentinel subcharts.
 global:
+  # Marker indicating Sentinel is installed under the opennms-stack umbrella.
+  # When true, Sentinel's appSecret resolution falls through to Core's
+  # lab-mode Secret (<release>-opennms-pg-app) when no operator Secret is set.
+  # Standalone Sentinel installs do not set this; the chart fails fast.
+  opennmsStack: true
+
   # org.opennms.instance.id — must match across Core, Sentinel, and any
   # Minions (which install separately).
   instanceId: OpenNMS
 
   # BYO Postgres. The umbrella NEVER deploys Postgres.
   # Both Core and Sentinel read from this block.
-  # The referenced Secret MUST contain keys:
-  #   POSTGRES_USER, POSTGRES_PASSWORD, OPENNMS_DBUSER, OPENNMS_DBPASS
-  # (Core consumes all four via envFrom; Sentinel consumes OPENNMS_DBUSER /
-  # OPENNMS_DBPASS via the envsubst init container.)
+  #
+  # Two independent Secrets — superuser (Core only) and app (Core + Sentinel).
+  # Each defaults to the CNPG-shaped key names (`username` / `password`);
+  # override `userKey` / `passwordKey` if your Secrets use other key names.
+  #
+  # Lab-mode: each Secret name field independently triggers Core to render
+  # a chart-managed Secret (`<release>-opennms-pg-superuser` and
+  # `<release>-opennms-pg-app`) when left empty — letting operators migrate
+  # one role at a time. Sentinel inherits the app Secret automatically.
   postgresql:
     host: ""
     port: 5432
     database: opennms
     auth:
-      existingSecret: ""
+      superuserSecret:
+        name: ""
+        userKey: username
+        passwordKey: password
+      appSecret:
+        name: ""
+        userKey: username
+        passwordKey: password
 
   # BYO Kafka.
   kafka:
