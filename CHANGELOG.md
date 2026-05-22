@@ -8,6 +8,19 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). All
 
 (no unreleased changes yet)
 
+## [0.3.1] — 2026-05-23
+
+### Changed
+
+- **All four charts** — `appVersion` bumped from `35.0.5` to `36.0.0` (latest stable OpenNMS Horizon release, published 2026-05-12). Chart values surface and templates are unchanged; the bump is image-only. Horizon 36.0.0 introduces DB-backed configuration for SNMP, data collection, Trapd, and eventconf — these schema migrations are applied automatically by Liquibase at Core boot on first install or upgrade.
+- **`minion`** — chart `version` bumped from `0.2.0` to `0.3.1` to re-establish the lock-step convention (`core`, `sentinel`, `minion`, `opennms-stack` all release together with the same chart `version`). The 0.2.0 → 0.3.1 jump skips a `0.3.0` Minion tag — Minion was not affected by 0.3.0's Postgres-surface change and was deliberately left behind; this release brings it back in line.
+- **All four charts** — strict-pin cascade: `core`, `sentinel`, `minion`, `opennms-stack` all at `0.3.1`. Umbrella `dependencies` strict-pin updated to `=0.3.1` for both `core` and `sentinel`.
+
+### Notes
+
+- Existing 0.3.0 (Horizon 35.0.5) installs upgrading to 0.3.1 will trigger the 35.x → 36.x Liquibase migration on the next Core pod restart. Snapshot the database first.
+- Fresh 0.3.1 installs against an empty database run the 36.0.0 schema bootstrap end-to-end — no migration involved.
+
 ## [0.3.0] — 2026-05-22
 
 ### Added
@@ -85,7 +98,8 @@ First published release of the OpenNMS Helm Charts.
 - `core.postgresql.host` defaults to a CNPG-specific hostname (`cluster-helm-lint-rw.default.svc.cluster.local`) used by the in-repo chart-testing flow. Production users must set `postgresql.host` explicitly — the chart fails template-time on missing host.
 - The optional `prometheus-remote-writer` plugin is downloaded from GitHub Releases at every pod start when enabled. Air-gapped clusters override `prometheusRemoteWriter.kar.url` to an internal mirror.
 
-[Unreleased]: https://github.com/labmonkeys-space/opennms-helm-charts/compare/v0.3.0...HEAD
+[Unreleased]: https://github.com/labmonkeys-space/opennms-helm-charts/compare/v0.3.1...HEAD
+[0.3.1]: https://github.com/labmonkeys-space/opennms-helm-charts/compare/v0.3.0...v0.3.1
 [0.3.0]: https://github.com/labmonkeys-space/opennms-helm-charts/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/labmonkeys-space/opennms-helm-charts/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/labmonkeys-space/opennms-helm-charts/releases/tag/v0.1.0
