@@ -145,7 +145,7 @@ install-all: test-install-core test-install-minion test-install-sentinel test-in
 # Karaf shell sessions, etc.
 #
 # Releases are installed in the `default` namespace alongside the infrastructure
-# stubs so existingSecret references and Service DNS names resolve naturally.
+# stubs so Secret references and Service DNS names resolve naturally.
 # ============================================================================
 
 .PHONY: dev-install-core
@@ -153,7 +153,9 @@ dev-install-core: lint kind-create install-postgres install-stack-pg-secret
 	@echo -n "🛠️  Dev install Core           ... "
 	@helm upgrade --install core charts/core \
 		--namespace default \
-		--set postgresql.auth.existingSecret=opennms-stack-pg \
+		--set postgresql.host=cluster-helm-lint-rw.default.svc.cluster.local \
+		--set postgresql.auth.superuserSecret.name=opennms-stack-pg-superuser \
+		--set postgresql.auth.appSecret.name=opennms-stack-pg-app \
 		1>/dev/null
 	@echo "$(OK)"
 	@echo ""
@@ -176,7 +178,7 @@ dev-install-sentinel: lint kind-create install-postgres install-stack-pg-secret 
 	@helm upgrade --install sentinel charts/sentinel \
 		--namespace default \
 		--set postgresql.host=cluster-helm-lint-rw.default.svc.cluster.local \
-		--set postgresql.auth.existingSecret=opennms-stack-pg \
+		--set postgresql.auth.appSecret.name=opennms-stack-pg-app \
 		--set kafka.bootstrapServers=kafka.default.svc.cluster.local:9092 \
 		--set elasticsearch.url=http://elasticsearch.default.svc.cluster.local:9200 \
 		1>/dev/null
@@ -221,7 +223,8 @@ dev-install-stack: lint kind-create install-postgres install-stack-pg-secret ins
 	@helm upgrade --install opennms-stack charts/opennms-stack \
 		--namespace default \
 		--set global.postgresql.host=cluster-helm-lint-rw.default.svc.cluster.local \
-		--set global.postgresql.auth.existingSecret=opennms-stack-pg \
+		--set global.postgresql.auth.superuserSecret.name=opennms-stack-pg-superuser \
+		--set global.postgresql.auth.appSecret.name=opennms-stack-pg-app \
 		--set global.kafka.bootstrapServers=kafka.default.svc.cluster.local:9092 \
 		--set global.elasticsearch.url=http://elasticsearch.default.svc.cluster.local:9200 \
 		1>/dev/null

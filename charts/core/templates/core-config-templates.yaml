@@ -34,7 +34,7 @@
 {{- end }}
 
 {{- if .Values.elasticsearch.enabled }}
-{{- $esCfg := printf "elasticUrl=%s\nelasticIndexStrategy=%s\nsettings.index.number_of_replicas=%v\nconnTimeout=%v\nreadTimeout=%v\nenableForwarding=%v\n" (include "core.elasticsearchUrl" .) .Values.elasticsearch.indexStrategy .Values.elasticsearch.replicas .Values.elasticsearch.connTimeout .Values.elasticsearch.readTimeout .Values.elasticsearch.enableForwarding -}}
+{{- $esCfg := printf "elasticUrl=%s\nelasticIndexStrategy=%s\nsettings.index.number_of_replicas=%d\nconnTimeout=%d\nreadTimeout=%d\nenableForwarding=%t\n" (include "core.elasticsearchUrl" .) .Values.elasticsearch.indexStrategy (.Values.elasticsearch.replicas | int) (.Values.elasticsearch.connTimeout | int) (.Values.elasticsearch.readTimeout | int) (ternary true false .Values.elasticsearch.enableForwarding) -}}
 {{- $esSecret := include "core.elasticsearchExistingSecret" . -}}
 {{- if $esSecret -}}
 {{- $esCfg = printf "%selasticUser=${ELASTIC_USERNAME}\nelasticPassword=${ELASTIC_PASSWORD}\n" $esCfg -}}

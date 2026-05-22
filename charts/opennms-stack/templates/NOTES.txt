@@ -24,8 +24,11 @@ You must provide:
 
 And these Secrets in namespace {{ .Release.Namespace }}:
 
-  global.postgresql.auth.existingSecret = {{ .Values.global.postgresql.auth.existingSecret | default "<UNSET>" }}
-    keys: POSTGRES_USER, POSTGRES_PASSWORD, OPENNMS_DBUSER, OPENNMS_DBPASS
+  global.postgresql.auth.superuserSecret.name = {{ ((.Values.global.postgresql.auth.superuserSecret).name) | default (printf "<UNSET — lab-mode will render %s-opennms-pg-superuser>" .Release.Name) }}
+    keys: username, password   (default; override userKey/passwordKey per block)
+
+  global.postgresql.auth.appSecret.name       = {{ ((.Values.global.postgresql.auth.appSecret).name) | default (printf "<UNSET — lab-mode will render %s-opennms-pg-app>" .Release.Name) }}
+    keys: username, password   (default; override userKey/passwordKey per block)
 
   global.elasticsearch.auth.existingSecret = {{ .Values.global.elasticsearch.auth.existingSecret | default "<not required if ES is anonymous>" }}
     keys: ELASTIC_USERNAME, ELASTIC_PASSWORD

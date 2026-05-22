@@ -101,7 +101,7 @@ Postgres app-role Secret reference. Resolution order:
 {{- $local := (((.Values.postgresql.auth).appSecret).name) | default "" -}}
 {{- if $global -}}{{ $global }}
 {{- else if $local -}}{{ $local }}
-{{- else if ((.Values.global).opennmsStack) -}}{{ printf "%s-opennms-pg-app" .Release.Name }}
+{{- else if eq ((.Values.global).opennmsStack) true -}}{{ printf "%s-opennms-pg-app" .Release.Name | trunc 63 | trimSuffix "-" }}
 {{- else -}}{{ fail "postgresql.auth.appSecret.name is required when installing the sentinel chart standalone. Install via the opennms-stack umbrella to inherit the Core lab-mode Secret automatically." }}
 {{- end -}}
 {{- end }}

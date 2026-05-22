@@ -130,7 +130,7 @@ under the umbrella can synthesise the same name from .Release.Name alone.
 {{- $local := (((.Values.postgresql.auth).superuserSecret).name) | default "" -}}
 {{- if $global -}}{{ $global }}
 {{- else if $local -}}{{ $local }}
-{{- else -}}{{ .Release.Name }}-opennms-pg-superuser
+{{- else -}}{{ printf "%s-opennms-pg-superuser" .Release.Name | trunc 63 | trimSuffix "-" }}
 {{- end -}}
 {{- end }}
 
@@ -164,7 +164,7 @@ under the umbrella can synthesise the same name from .Release.Name alone.
 {{- $local := (((.Values.postgresql.auth).appSecret).name) | default "" -}}
 {{- if $global -}}{{ $global }}
 {{- else if $local -}}{{ $local }}
-{{- else -}}{{ .Release.Name }}-opennms-pg-app
+{{- else -}}{{ printf "%s-opennms-pg-app" .Release.Name | trunc 63 | trimSuffix "-" }}
 {{- end -}}
 {{- end }}
 
@@ -188,7 +188,8 @@ under the umbrella can synthesise the same name from .Release.Name alone.
 
 {{/*
 Returns "true" when no superuserSecret is configured and the chart should
-render the lab-mode Secret `<fullname>-pg-superuser`. Returns "" otherwise.
+render the lab-mode Secret `<release>-opennms-pg-superuser`. Returns ""
+otherwise.
 */}}
 {{- define "core.postgresSuperuserLabMode" -}}
 {{- $global := (((((.Values.global).postgresql).auth).superuserSecret).name) | default "" -}}
@@ -198,7 +199,7 @@ render the lab-mode Secret `<fullname>-pg-superuser`. Returns "" otherwise.
 
 {{/*
 Returns "true" when no appSecret is configured and the chart should render
-the lab-mode Secret `<fullname>-pg-app`. Returns "" otherwise.
+the lab-mode Secret `<release>-opennms-pg-app`. Returns "" otherwise.
 */}}
 {{- define "core.postgresAppLabMode" -}}
 {{- $global := (((((.Values.global).postgresql).auth).appSecret).name) | default "" -}}
