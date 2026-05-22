@@ -1,22 +1,8 @@
 # sentinel
 
-![Version: 0.2.0](https://img.shields.io/badge/Version-0.2.0-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: 35.0.5](https://img.shields.io/badge/AppVersion-35.0.5-informational?style=flat-square)
+![Version: 0.3.0](https://img.shields.io/badge/Version-0.3.0-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: 35.0.5](https://img.shields.io/badge/AppVersion-35.0.5-informational?style=flat-square)
 
 A Helm chart for Kubernetes
-
-## Upgrading from 0.2.0
-
-`postgresql.auth.existingSecret` is removed in 0.3.0. Set
-`postgresql.auth.appSecret.name` (and optionally `userKey` / `passwordKey`)
-to point Sentinel at its application-role Postgres Secret.
-
-Standalone Sentinel installs **must** set `appSecret.name`; rendering
-fails fast otherwise. Under the `opennms-stack` umbrella, Sentinel falls
-through to Core's lab-mode app Secret (`<release>-opennms-pg-app`) when no
-operator Secret is supplied.
-
-`elasticsearch.enableForwarding` (default `true`) is a new explicit master
-switch rendered into the flow-persistence cfg.
 
 ## Maintainers
 
@@ -38,6 +24,7 @@ switch rendered into the flow-persistence cfg.
 | configRenderer.image.tag | string | `"3.19"` |  |
 | elasticsearch.auth.existingSecret | string | `""` |  |
 | elasticsearch.connTimeout | int | `30000` |  |
+| elasticsearch.enableForwarding | bool | `true` |  |
 | elasticsearch.enabled | bool | `true` |  |
 | elasticsearch.indexStrategy | string | `"monthly"` |  |
 | elasticsearch.readTimeout | int | `30000` |  |
@@ -70,7 +57,12 @@ switch rendered into the flow-persistence cfg.
 | podAnnotations | object | `{}` |  |
 | podLabels | object | `{}` |  |
 | podSecurityContext | object | `{}` |  |
-| postgresql.auth.existingSecret | string | `""` |  |
+| postgresql.auth.appSecret.name | string | `""` |  |
+| postgresql.auth.appSecret.passwordKey | string | `"password"` |  |
+| postgresql.auth.appSecret.userKey | string | `"username"` |  |
+| postgresql.auth.superuserSecret.name | string | `""` |  |
+| postgresql.auth.superuserSecret.passwordKey | string | `"password"` |  |
+| postgresql.auth.superuserSecret.userKey | string | `"username"` |  |
 | postgresql.database | string | `"opennms"` |  |
 | postgresql.host | string | `""` |  |
 | postgresql.port | int | `5432` |  |
