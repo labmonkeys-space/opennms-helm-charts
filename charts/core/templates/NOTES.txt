@@ -31,9 +31,18 @@ Image:      {{ include "core.image" . }}
 This chart configures connectivity to external Postgres (and optionally Kafka
 SASL and Elasticsearch). It does NOT deploy any of those systems.
 
-For PRODUCTION, set `postgresql.auth.existingSecret` to reference a Secret
-containing these keys:
-    POSTGRES_USER, POSTGRES_PASSWORD, OPENNMS_DBUSER, OPENNMS_DBPASS
+For PRODUCTION, point Core at two existing Secrets — one per Postgres role:
+
+    postgresql.auth.superuserSecret.name   (schema bootstrap; superuser)
+    postgresql.auth.appSecret.name         (runtime; application role)
+
+Each Secret defaults to CNPG-shaped keys `username` / `password`. Override
+`userKey` / `passwordKey` per block if your Secrets use other key names
+(e.g. legacy `POSTGRES_USER` / `POSTGRES_PASSWORD` from pre-0.3.0 setups).
+
+When both `superuserSecret.name` and `appSecret.name` are empty, the chart
+renders lab-mode Secrets `{{ .Release.Name }}-opennms-pg-superuser` and
+`{{ .Release.Name }}-opennms-pg-app` from inline values — for dev/lab use only.
 
 If `kafka.auth.enabled=true`, also set `kafka.auth.existingSecret` with:
     KAFKA_USERNAME, KAFKA_PASSWORD

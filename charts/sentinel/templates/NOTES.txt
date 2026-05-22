@@ -19,12 +19,19 @@ default) Elasticsearch. It does NOT deploy any of those systems.
 
 For PRODUCTION, set these values to reference Secrets you manage:
 
-  postgresql.auth.existingSecret      keys: OPENNMS_DBUSER, OPENNMS_DBPASS
+  postgresql.auth.appSecret.name      (required for standalone; CNPG-shaped
+                                       keys `username`/`password` by default —
+                                       override `userKey`/`passwordKey` if
+                                       your Secret uses other key names)
   opennms.http.existingSecret         keys: OPENNMS_HTTP_USER, OPENNMS_HTTP_PASS
   kafka.auth.existingSecret           keys: KAFKA_USERNAME, KAFKA_PASSWORD
                                       (only when kafka.auth.enabled=true)
   elasticsearch.auth.existingSecret   keys: ELASTIC_USERNAME, ELASTIC_PASSWORD
                                       (only when ES needs auth)
+
+Under the `opennms-stack` umbrella, `appSecret.name` is optional — Sentinel
+inherits Core's lab-mode app Secret automatically. Standalone Sentinel
+installs without `appSecret.name` fail at template time.
 
 The HTTP credentials are persisted into Sentinel's SCV keystore at container
 start (entrypoint mode `-c`); they're used by Sentinel for Core REST API

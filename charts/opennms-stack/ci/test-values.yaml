@@ -5,13 +5,12 @@
 # `default` are not reachable from the random ct namespace.
 #
 # This test exercises the umbrella lab-mode end-to-end: Core renders two
-# lab-mode Secrets (<release>-core-pg-superuser and <release>-core-pg-app),
-# and Sentinel falls through to <release>-core-pg-app for its appSecret.
+# lab-mode Secrets (<release>-opennms-pg-superuser and <release>-opennms-pg-app),
+# and Sentinel falls through to <release>-opennms-pg-app for its appSecret.
 # Both subcharts render their full configs and Karaf boots in both pods.
 #
 # Operator-supplied Secret paths (CNPG-shaped Secrets with userKey/
-# passwordKey overrides) are exercised by helm-template tests in CI; see
-# section 6 of the change tasks.
+# passwordKey overrides) are exercised by helm-template tests in CI.
 
 global:
   postgresql:

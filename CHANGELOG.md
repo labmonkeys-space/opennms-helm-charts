@@ -8,6 +8,35 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). All
 
 (no unreleased changes yet)
 
+## [0.3.0] — 2026-05-22
+
+### Added
+
+- **`core`, `sentinel`** — new structured Postgres auth surface. `global.postgresql.auth` (and per-subchart equivalents) now exposes `superuserSecret.{name,userKey,passwordKey}` and `appSecret.{name,userKey,passwordKey}`. Each block defaults to the CNPG-shaped key names `username` / `password`; operators with non-CNPG Secrets override `userKey` / `passwordKey` per block. Existing 0.2.0 single-Secret users can keep their Secret and point both blocks at it with explicit overrides — see `opennms-stack/README.md` upgrade notes.
+- **`core`, `sentinel`** — new `elasticsearch.enableForwarding` value (default `true`), rendered into `org.opennms.features.flows.persistence.elastic.cfg` as a first-class master switch.
+- **`core`** — `elasticsearch` block gains `replicas`, `connTimeout`, `readTimeout` for parity with Sentinel's flow-persistence surface. New helpers `core.elasticsearchUrl` and `core.elasticsearchExistingSecret` resolve global → local so `global.elasticsearch.*` flows into Core when its optional flow-persistence path is enabled.
+- **`opennms-stack`** — new `global.opennmsStack: true` marker. Sentinel uses this marker (rather than bare `.Values.global` truthiness) to detect the umbrella context and fall through to the Core-rendered lab-mode app Secret. Standalone Sentinel installs with unrelated `--set global.foo=bar` flags continue to fail-fast correctly.
+- **`core`** — lab-mode renders two release-scoped Secrets — `<release>-opennms-pg-superuser` and `<release>-opennms-pg-app` — each shaped like CNPG (`username` / `password` keys). Sentinel under the umbrella synthesises the same name from `.Release.Name` alone, independent of Core's `nameOverride` / `fullnameOverride`. The two lab-mode renders are independent so operators can migrate one role at a time.
+
+### Removed
+
+- **`core`, `sentinel`, `opennms-stack`** — `postgresql.auth.existingSecret` removed from values, helpers (`core.postgresExistingSecret`, `core.postgresSecretName`, `sentinel.postgresExistingSecret`), templates, NOTES.txt, READMEs, and examples. The old single-Secret form is no longer accepted.
+- **`core`** — `core/templates/core-credentials.yaml` deleted. Replaced by `core-pg-superuser-credentials.yaml` and `core-pg-app-credentials.yaml`, which each render a CNPG-shaped Secret only when its corresponding `<role>Secret.name` is empty.
+- **`core`** — `envFrom: secretRef` removed from both `core-init` and runtime container in `statefulset.yaml`; replaced by four explicit `valueFrom.secretKeyRef` env entries emitted by the new `core.postgresEnv` helper.
+
+### Changed
+
+- **All four charts** — strict-pin cascade: `core`, `sentinel`, `opennms-stack` all bump from `0.2.0` to `0.3.0`. Umbrella `dependencies` strict-pin updated to `=0.3.0`. `minion` chart is unaffected by 0.3.0 changes; its version stays at `0.2.0`.
+
+### Breaking changes (upgrade impact for 0.2.0 → 0.3.0 users)
+
+- **`postgresql.auth.existingSecret` is removed.** Migration paths (see `opennms-stack/README.md` "Upgrading from 0.2.0"):
+  - **CNPG users:** set `superuserSecret.name` and `appSecret.name` to the per-role Secrets your operator already generates. Defaults handle the `username`/`password` key names.
+  - **Legacy single-Secret users:** keep your Secret. Point both blocks at it with explicit `userKey` / `passwordKey` overrides — see the README for the exact YAML.
+- **`<release>-core-credentials` lab-mode Secret name is gone.** Anything that referenced the old name out-of-band (CI scripts, kubectl assertions) needs to point at `<release>-opennms-pg-superuser` and `<release>-opennms-pg-app` instead.
+- **`envFrom` projection of the Postgres Secret is gone.** Operators who reused the 0.2.0 `existingSecret` to carry extra keys (e.g. shared Kafka/HTTP credentials) lose that side-projection — only the four expected Postgres env vars are now mounted.
+- **Standalone Sentinel installs without `appSecret.name` fail at template time.** Under the umbrella, Sentinel falls through to Core's lab-mode app Secret automatically.
+
 ## [0.2.0] — 2026-05-07
 
 ### Added
@@ -56,5 +85,7 @@ First published release of the OpenNMS Helm Charts.
 - `core.postgresql.host` defaults to a CNPG-specific hostname (`cluster-helm-lint-rw.default.svc.cluster.local`) used by the in-repo chart-testing flow. Production users must set `postgresql.host` explicitly — the chart fails template-time on missing host.
 - The optional `prometheus-remote-writer` plugin is downloaded from GitHub Releases at every pod start when enabled. Air-gapped clusters override `prometheusRemoteWriter.kar.url` to an internal mirror.
 
-[Unreleased]: https://github.com/labmonkeys-space/opennms-helm-charts/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/labmonkeys-space/opennms-helm-charts/compare/v0.3.0...HEAD
+[0.3.0]: https://github.com/labmonkeys-space/opennms-helm-charts/compare/v0.2.0...v0.3.0
+[0.2.0]: https://github.com/labmonkeys-space/opennms-helm-charts/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/labmonkeys-space/opennms-helm-charts/releases/tag/v0.1.0
