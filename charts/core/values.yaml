@@ -231,7 +231,10 @@ postgresql:
 
 # BYO Kafka. This chart NEVER deploys Kafka.
 #
-# Renders org.opennms.core.ipc.{sink,rpc,twin}.kafka.cfg into the etc-overlay.
+# Renders Kafka client properties into opennms.properties.d/kafka-ipc.properties
+# with the `org.opennms.core.ipc.kafka.` prefix. OnmsKafkaConfigProvider strips
+# the prefix and hands the rest to the Kafka client (Core reads IPC config from
+# system properties, not Karaf ConfigAdmin .cfg files).
 # When `auth.enabled` is true, the chart references `auth.existingSecret`
 # whose keys MUST be: KAFKA_USERNAME, KAFKA_PASSWORD.
 # When `tls.enabled` is true, `tls.existingSecret` must contain `ca.crt`
@@ -246,7 +249,8 @@ kafka:
   tls:
     enabled: false
     existingSecret: ""
-  # Passthrough Kafka client properties merged into all three .cfg files.
+  # Passthrough Kafka client properties prefixed with org.opennms.core.ipc.kafka.
+  # in opennms.properties.d/kafka-ipc.properties.
   extraProperties: {}
     # compression.type: gzip
     # request.timeout.ms: "30000"
