@@ -8,6 +8,24 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). All
 
 (no unreleased changes yet)
 
+## [0.3.2] — 2026-05-23
+
+### Fixed
+
+- **`core`** — Kafka IPC config is now written as system properties in `opennms.properties.d/kafka-ipc.properties` with the `org.opennms.core.ipc.kafka.` prefix, instead of `.cfg` files plus `featuresBoot.d/kafka-*.boot` directives. Core reads Kafka IPC config via `OnmsKafkaConfigProvider` (system-property scan, prefix-stripped), not Karaf ConfigAdmin — the `.cfg` writes were dead, and the `featuresBoot.d` writes referenced `opennms-core-ipc-{rpc,sink,twin}-kafka` features whose implementation bundles (`org.opennms.core.ipc.rpc.kafka`, `org.opennms.core.ipc.sink.kafka.client`, `org.opennms.core.ipc.twin.kafka.subscriber`) are not shipped in the `opennms/horizon:36.0.0` (and `35.x`) OCI image. The Karaf resolver consequently fails at boot with `Error downloading mvn:...` and Core never starts when `kafka.bootstrapServers` is set. The new path matches what `OpenNMSContainer.java` in the upstream smoke harness does — and is the only path that actually works on the published Horizon image.
+
+### Changed
+
+- **All four charts** — strict-pin cascade: `core`, `sentinel`, `minion`, `opennms-stack` all bump from `0.3.1` to `0.3.2`. Umbrella `dependencies` strict-pin updated to `=0.3.2`. `sentinel` and `minion` chart contents are unchanged; the bump preserves the lock-step convention.
+
+### Breaking changes (upgrade impact for 0.3.1 → 0.3.2 users)
+
+- **`core` — three `.cfg` paths and four `featuresBoot.d` paths in the Core etc-overlay are gone.** Operators who set `extraConfigFiles."org.opennms.core.ipc.{sink,rpc,twin}.kafka.cfg": ...` or `extraConfigFiles."featuresBoot.d/kafka-{ipc,rpc,sink,twin}.boot": ...` to override the chart-managed entries will still see their content written to the etc-overlay, but it will no longer be matched by a chart-managed entry — those overrides become inert dead writes that Core does not read. Re-express any Kafka client tunings as `kafka.extraProperties` (rendered with the `org.opennms.core.ipc.kafka.` prefix into the new properties file) instead.
+
+### Known limitations (unchanged)
+
+- **Functional Kafka TLS is still not wired** in any of the three charts. `kafka.tls.enabled=true` flips the protocol to `SSL` / `SASL_SSL`, but the chart does NOT mount the `tls.existingSecret` into the pod or emit `ssl.truststore.location` / `ssl.keystore.location` properties. For TLS-encrypted Kafka right now, operators must mount the Secret and emit the truststore properties via `extraConfigFiles` themselves. Full TLS wiring is targeted for a follow-up release across all three charts in lock-step.
+
 ## [0.3.1] — 2026-05-23
 
 ### Changed
@@ -98,7 +116,8 @@ First published release of the OpenNMS Helm Charts.
 - `core.postgresql.host` defaults to a CNPG-specific hostname (`cluster-helm-lint-rw.default.svc.cluster.local`) used by the in-repo chart-testing flow. Production users must set `postgresql.host` explicitly — the chart fails template-time on missing host.
 - The optional `prometheus-remote-writer` plugin is downloaded from GitHub Releases at every pod start when enabled. Air-gapped clusters override `prometheusRemoteWriter.kar.url` to an internal mirror.
 
-[Unreleased]: https://github.com/labmonkeys-space/opennms-helm-charts/compare/v0.3.1...HEAD
+[Unreleased]: https://github.com/labmonkeys-space/opennms-helm-charts/compare/v0.3.2...HEAD
+[0.3.2]: https://github.com/labmonkeys-space/opennms-helm-charts/compare/v0.3.1...v0.3.2
 [0.3.1]: https://github.com/labmonkeys-space/opennms-helm-charts/compare/v0.3.0...v0.3.1
 [0.3.0]: https://github.com/labmonkeys-space/opennms-helm-charts/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/labmonkeys-space/opennms-helm-charts/compare/v0.1.0...v0.2.0

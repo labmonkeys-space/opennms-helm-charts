@@ -256,19 +256,22 @@ Kafka SASL security protocol — adjusts based on whether TLS is also enabled.
 {{- end }}
 
 {{/*
-Kafka .cfg body shared by sink, rpc, and twin .cfg files. Emits bootstrap.servers,
-security.protocol, optional SASL block (with envsubst placeholders for credentials),
-and any extraProperties.
+Kafka IPC system properties for opennms.properties.d/. Core reads Kafka client
+config from system properties (not Karaf ConfigAdmin .cfg files): the
+org.opennms.core.ipc.kafka.* prefix is stripped by OnmsKafkaConfigProvider
+(opennms-project: core/ipc/common/kafka/.../OnmsKafkaConfigProvider.java) and
+the remainder is fed to the Kafka client.
 */}}
-{{- define "core.kafkaCfgBlock" -}}
-bootstrap.servers={{ include "core.kafkaBootstrap" . }}
-security.protocol={{ include "core.kafkaSecurityProtocol" . }}
+{{- define "core.kafkaSysPropsBlock" -}}
+org.opennms.core.ipc.strategy=kafka
+org.opennms.core.ipc.kafka.bootstrap.servers={{ include "core.kafkaBootstrap" . }}
+org.opennms.core.ipc.kafka.security.protocol={{ include "core.kafkaSecurityProtocol" . }}
 {{- if .Values.kafka.auth.enabled }}
-sasl.mechanism={{ .Values.kafka.auth.mechanism }}
-sasl.jaas.config={{ include "core.kafkaJaasModule" . }} required username="${KAFKA_USERNAME}" password="${KAFKA_PASSWORD}";
+org.opennms.core.ipc.kafka.sasl.mechanism={{ .Values.kafka.auth.mechanism }}
+org.opennms.core.ipc.kafka.sasl.jaas.config={{ include "core.kafkaJaasModule" . }} required username="${KAFKA_USERNAME}" password="${KAFKA_PASSWORD}";
 {{- end }}
 {{- range $k, $v := .Values.kafka.extraProperties }}
-{{ $k }}={{ $v }}
+org.opennms.core.ipc.kafka.{{ $k }}={{ $v }}
 {{- end }}
 {{- end }}
 
