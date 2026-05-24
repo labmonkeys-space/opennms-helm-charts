@@ -34,6 +34,12 @@ core:
   # Skip the 50Gi PVC in kind — no default storage class.
   persistence:
     enabled: false
+  # Exercise the daemon-re-enable path through the umbrella's sub-values.
+  # Chart default is `daemons.ackd.enabled: false`; this flip back to `true`
+  # mirrors charts/core/ci/test-values.yaml.
+  daemons:
+    ackd:
+      enabled: true
 
 sentinel:
   replicaCount: 1

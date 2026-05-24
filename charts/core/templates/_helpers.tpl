@@ -296,6 +296,15 @@ This helper is duplicated in sentinel/ and minion/ — keep them in sync.
     - |
       set -eu
       apk add --no-cache gettext >/dev/null
+      # Stale-overlay cleanup: chart ≤0.3.1 wrote four featuresBoot.d/kafka-*.boot
+      # files referencing IPC feature bundles that don't ship in any opennms/horizon
+      # image. 0.3.2 stopped writing them, but applyOverlayConfig is additive and
+      # the broken files survive on the PVC across upgrades — Karaf then fails to
+      # resolve the bundles at boot. Remove them explicitly on every pod start.
+      rm -f /opennms-data/etc/featuresBoot.d/kafka-ipc.boot \
+            /opennms-data/etc/featuresBoot.d/kafka-rpc.boot \
+            /opennms-data/etc/featuresBoot.d/kafka-sink.boot \
+            /opennms-data/etc/featuresBoot.d/kafka-twin.boot
       # ConfigMap data keys cannot contain "/", so subpaths under etc/ are
       # encoded with "__" in the key name and decoded back to "/" here.
       # Example: opennms.properties.d__timeseries.properties
@@ -321,6 +330,8 @@ This helper is duplicated in sentinel/ and minion/ — keep them in sync.
       mountPath: /tmp/templates
     - name: etc-overlay
       mountPath: /etc-overlay
+    - name: opennms-data
+      mountPath: /opennms-data
 {{- end }}
 
 {{/*
@@ -374,6 +385,48 @@ enabled (which routes time-series through the plugin), else the user's value.
 */}}
 {{- define "core.timeseriesStrategy" -}}
 {{- if .Values.prometheusRemoteWriter.enabled -}}integration{{- else -}}{{ .Values.timeseriesStrategy }}{{- end -}}
+{{- end }}
+
+{{/*
+Whitelist mapping chart-known daemon short names → upstream env-var stems.
+Disabling `core.daemons.<short>.enabled = false` projects
+`CORE_SERVICE_<STEM>_ENABLED=false` into both Core containers.
+
+Evidence the env-var path exists upstream (opennms/horizon:36.0.0
+/opt/opennms/etc/service-configuration.xml):
+
+  <service enabled="${env:CORE_SERVICE_ACKD_ENABLED|true}"><name>OpenNMS:Name=Ackd</name></service>
+
+To add the next daemon: append one entry below AND mention it in values.yaml.
+*/}}
+{{- define "core.daemonsEnvWhitelist" -}}
+ackd: ACKD
+{{- end }}
+
+{{/*
+Emits a YAML env list (zero or more entries) projecting CORE_SERVICE_<STEM>_ENABLED=false
+for each `core.daemons.<short>.enabled = false` entry. Entries left at the
+default `enabled: true` produce no env line (the upstream default already wins).
+
+Fails helm template if the operator references a short name not in the
+whitelist, with a message naming the bad key and listing valid names.
+*/}}
+{{- define "core.daemonsDisableEnv" -}}
+{{- $whitelist := fromYaml (include "core.daemonsEnvWhitelist" .) -}}
+{{- $validKeys := keys $whitelist | sortAlpha | join ", " -}}
+{{- range $short, $cfg := .Values.daemons }}
+{{- $stem := index $whitelist $short -}}
+{{- if not $stem -}}
+{{- fail (printf "core.daemons: unknown daemon %q — valid names are: %s" $short $validKeys) -}}
+{{- end }}
+{{- if not (hasKey $cfg "enabled") -}}
+{{- fail (printf "core.daemons.%s: missing required field 'enabled'" $short) -}}
+{{- end }}
+{{- if not $cfg.enabled }}
+- name: CORE_SERVICE_{{ $stem }}_ENABLED
+  value: "false"
+{{- end }}
+{{- end }}
 {{- end }}
 
 {{/*
