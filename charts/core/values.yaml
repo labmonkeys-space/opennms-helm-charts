@@ -280,6 +280,24 @@ elasticsearch:
     # Secret must contain keys: ELASTIC_USERNAME, ELASTIC_PASSWORD
     existingSecret: ""
 
+# Per-daemon enable/disable. Upstream service-configuration.xml wraps every
+# Core daemon's `enabled` attribute in ${env:CORE_SERVICE_<NAME>_ENABLED|<default>},
+# so flipping `enabled` here projects the matching env var into both
+# Core containers — no XML editing, no extra init containers.
+#
+# Unknown short names fail `helm template` with a clear error listing the
+# whitelist. Adding the next daemon: append one entry to
+# `core.daemonsEnvWhitelist` in _helpers.tpl AND one entry below. The current
+# whitelist holds only `ackd`; expand as operators ask for it.
+#
+# `ackd` defaults to `false`: the Acknowledgement Daemon is on the upstream
+# deprecation track and is not used by most deployments. Operators who rely on
+# alarm acknowledgement workflows that depend on Ackd should set
+# `daemons.ackd.enabled: true` here.
+daemons:
+  ackd:
+    enabled: false
+
 # Escape hatch: arbitrary additional .cfg / .properties files written into
 # the etc-overlay alongside chart-managed files. Keys are natural POSIX paths
 # *relative to etc/*; subdirectories work as you'd expect.

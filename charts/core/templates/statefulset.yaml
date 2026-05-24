@@ -85,6 +85,7 @@ spec:
                 name: {{ include "core.fullname" . }}-env
           env:
             {{- include "core.postgresEnv" . | nindent 12 }}
+            {{- include "core.daemonsDisableEnv" . | nindent 12 }}
           volumeMounts:
             - name: confd-overlay
               mountPath: /opt/opennms/horizon-config.yaml
@@ -108,6 +109,7 @@ spec:
                 name: {{ include "core.fullname" . }}-env
           env:
             {{- include "core.postgresEnv" . | nindent 12 }}
+            {{- include "core.daemonsDisableEnv" . | nindent 12 }}
           ports:
             - name: webui
               containerPort: 8980

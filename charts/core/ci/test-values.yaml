@@ -19,3 +19,13 @@ postgresql:
 # chart skips rendering Kafka cfg files. Core boots and its WebUI reaches
 # readiness; Kafka-using features will error in logs but won't block the
 # install or the wget smoke test.
+
+# Exercise the daemon-re-enable path end-to-end. Chart default is
+# `daemons.ackd.enabled: false` (Ackd is on the upstream deprecation track);
+# flipping back to `true` here verifies that the override silences the
+# CORE_SERVICE_ACKD_ENABLED env var so Karaf reaches the upstream default
+# (`enabled="true"` baked into service-configuration.xml). The readiness probe
+# on port 8101 still passes — Ackd is not on the boot critical path.
+daemons:
+  ackd:
+    enabled: true

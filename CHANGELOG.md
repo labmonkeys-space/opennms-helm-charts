@@ -8,6 +8,30 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). All
 
 (no unreleased changes yet)
 
+## [0.3.3] — 2026-05-24
+
+### Fixed
+
+- **`core`** — Stale `featuresBoot.d/kafka-{ipc,rpc,sink,twin}.boot` files written by chart ≤0.3.1 now get removed from the persistent etc directory at every pod start. The 0.3.2 fix stopped *writing* these files, but the upstream entrypoint's `applyOverlayConfig` is additive — files dropped from the chart's overlay survive on the PVC across upgrades. Result on 0.3.1→0.3.2 upgrade: Karaf failed with `Error resolving artifact org.opennms.core.ipc.rpc:org.opennms.core.ipc.rpc.kafka:jar:36.0.0` and Core never started. 0.3.3 extends the envsubst init container to mount the PVC and `rm -f` the four well-known stale paths before the install container runs.
+
+### Added
+
+- **`core`** — new `core.daemons.<short-name>.enabled` values surface for per-daemon enable/disable. Upstream `etc/service-configuration.xml` already wraps every Core daemon's `enabled` attribute in `${env:CORE_SERVICE_<NAME>_ENABLED|<default>}`, so the chart projects a `CORE_SERVICE_<STEM>_ENABLED=false` env var into both Core containers when an operator flips `enabled: false` — no XML editing, no extra init container, no init image expansion. First (and only) wired daemon: `ackd`. Unknown short-names fail `helm template` with a clear error listing the whitelist. Adding the next daemon is one entry in `core.daemonsEnvWhitelist` (`charts/core/templates/_helpers.tpl`) plus one entry in `values.yaml`.
+
+### Changed
+
+- **`core`** — `daemons.ackd.enabled` defaults to `false`. Ackd is on the upstream deprecation track and most deployments don't use it. Operators who still rely on alarm acknowledgement workflows that depend on Ackd MUST set `core.daemons.ackd.enabled: true` explicitly on upgrade.
+- **All four charts** — strict-pin cascade: `core`, `sentinel`, `minion`, `opennms-stack` all bump from `0.3.2` to `0.3.3`. Umbrella `dependencies` strict-pin updated to `=0.3.3`. `sentinel` and `minion` chart contents are unchanged; the bump preserves the lock-step convention.
+
+### Breaking changes (upgrade impact for 0.3.2 → 0.3.3 users)
+
+- **`core` — Ackd is disabled by default.** Existing 0.3.2 deployments that depended on the upstream `enabled="true"` default for Ackd will see the daemon silently switched off after the upgrade. Mitigation: set `core.daemons.ackd.enabled: true` in your values before upgrading. The chart prints no warning when Ackd is disabled (the values block is the source of truth).
+- **`core` — operator-supplied `extraConfigFiles."featuresBoot.d/kafka-{ipc,rpc,sink,twin}.boot"` files will be deleted from the PVC at every pod start.** The cleanup `rm -f` runs unconditionally and targets exact filenames; the operator's overlay re-renders the files on each install, but the cleanup runs before the overlay copy. Mitigation: if you depend on bespoke `kafka-*.boot` content (unlikely — the bundles don't ship in any Horizon 35/36 image), rename to a non-conflicting filename.
+
+### Known limitations (unchanged)
+
+- **Functional Kafka TLS is still not wired** in any of the three charts. `kafka.tls.enabled=true` flips the protocol to `SSL` / `SASL_SSL`, but the chart does NOT mount the `tls.existingSecret` into the pod or emit `ssl.truststore.location` / `ssl.keystore.location` properties. Tracked for a follow-up lock-step release.
+
 ## [0.3.2] — 2026-05-23
 
 ### Fixed
@@ -116,7 +140,8 @@ First published release of the OpenNMS Helm Charts.
 - `core.postgresql.host` defaults to a CNPG-specific hostname (`cluster-helm-lint-rw.default.svc.cluster.local`) used by the in-repo chart-testing flow. Production users must set `postgresql.host` explicitly — the chart fails template-time on missing host.
 - The optional `prometheus-remote-writer` plugin is downloaded from GitHub Releases at every pod start when enabled. Air-gapped clusters override `prometheusRemoteWriter.kar.url` to an internal mirror.
 
-[Unreleased]: https://github.com/labmonkeys-space/opennms-helm-charts/compare/v0.3.2...HEAD
+[Unreleased]: https://github.com/labmonkeys-space/opennms-helm-charts/compare/v0.3.3...HEAD
+[0.3.3]: https://github.com/labmonkeys-space/opennms-helm-charts/compare/v0.3.2...v0.3.3
 [0.3.2]: https://github.com/labmonkeys-space/opennms-helm-charts/compare/v0.3.1...v0.3.2
 [0.3.1]: https://github.com/labmonkeys-space/opennms-helm-charts/compare/v0.3.0...v0.3.1
 [0.3.0]: https://github.com/labmonkeys-space/opennms-helm-charts/compare/v0.2.0...v0.3.0
