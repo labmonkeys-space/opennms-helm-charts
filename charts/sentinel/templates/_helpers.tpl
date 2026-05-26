@@ -256,6 +256,13 @@ Env vars for the runtime container that drive the Sentinel entrypoint:
 - SENTINEL_LOCATION: written by entrypoint into controller.cfg
 - OPENNMS_HTTP_USER/PASS: stored in SCV keystore by the entrypoint's `-c`
   mode at startup; used by Sentinel for Core REST API calls.
+- OPENNMS_BROKER_USER/PASS: also stored in SCV keystore by `-c` mode. The
+  upstream entrypoint's useEnvCredentials() invokes `scvcli set opennms.broker`
+  unconditionally, so the chart must always emit these env vars when `-c`
+  mode is active. When opennms.broker.existingSecret is set, both come from
+  the named Secret via secretKeyRef. Otherwise the chart emits literal
+  value: "unused" so the scvcli call completes on Kafka-IPC deployments that
+  don't use a JMS broker.
 The instance ID is rendered into instance-id.properties via the etc-overlay,
 not via env var.
 */}}
@@ -283,6 +290,23 @@ not via env var.
     secretKeyRef:
       name: {{ .Values.opennms.http.existingSecret | quote }}
       key: OPENNMS_HTTP_PASS
+{{- if .Values.opennms.broker.existingSecret }}
+- name: OPENNMS_BROKER_USER
+  valueFrom:
+    secretKeyRef:
+      name: {{ .Values.opennms.broker.existingSecret | quote }}
+      key: OPENNMS_BROKER_USER
+- name: OPENNMS_BROKER_PASS
+  valueFrom:
+    secretKeyRef:
+      name: {{ .Values.opennms.broker.existingSecret | quote }}
+      key: OPENNMS_BROKER_PASS
+{{- else }}
+- name: OPENNMS_BROKER_USER
+  value: "unused"
+- name: OPENNMS_BROKER_PASS
+  value: "unused"
+{{- end }}
 {{- end }}
 {{- end }}
 

@@ -8,6 +8,29 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). All
 
 (no unreleased changes yet)
 
+## [0.3.4] — 2026-05-26
+
+### Fixed
+
+- **`sentinel`** — `-c` startup mode no longer crash-loops with `Error: Argument "password" is required` when only HTTP SCV credentials are wired. The upstream `/entrypoint.sh` `useEnvCredentials()` function invokes `scvcli set opennms.broker $OPENNMS_BROKER_USER $OPENNMS_BROKER_PASS` **unconditionally** alongside the HTTP call. Prior chart versions emitted only the HTTP env vars, so the broker `scvcli` call ran with both positional args empty and aborted the install init container. The chart now always emits both `OPENNMS_BROKER_USER` and `OPENNMS_BROKER_PASS` in `-c` mode — sourced from `opennms.broker.existingSecret` when set, otherwise as literal `value: "unused"` so the upstream call completes. Verified against `docker.io/opennms/sentinel:36.0.0` (chart-pinned) and `quay.io/bluebird/sentinel:37.0.0`.
+
+### Added
+
+- **`sentinel`** — new `opennms.broker.existingSecret` values surface, mirroring the existing `opennms.http.existingSecret` shape. Set this when your deployment uses a JMS broker and you want real broker credentials in `etc/scv.jce`. The Secret must carry keys `OPENNMS_BROKER_USER` and `OPENNMS_BROKER_PASS`. Kafka-IPC deployments leave this empty and rely on the chart's fallback to satisfy the upstream entrypoint.
+
+### Changed
+
+- **All four charts** — strict-pin cascade: `core`, `sentinel`, `minion`, `opennms-stack` all bump from `0.3.3` to `0.3.4`. Umbrella `dependencies` strict-pin updated to `=0.3.4`. `core` and `minion` chart contents are unchanged; the bump preserves the lock-step convention.
+
+### Notes (upgrade impact for 0.3.3 → 0.3.4 users)
+
+- **Dummy `opennms.broker` credentials in `etc/scv.jce` on Kafka-IPC deployments.** After upgrade, Sentinel pods that don't set `opennms.broker.existingSecret` will have an `opennms.broker` alias in `etc/scv.jce` with username/password both literally `unused`. The alias is never consulted in Kafka-IPC mode (broker IPC is disabled at the Core side via `disable-activemq.properties`). Operators running on JMS IPC SHOULD provision a real broker Secret and set `sentinel.opennms.broker.existingSecret` before upgrading; the dummy values would otherwise fail JMS broker authentication at runtime.
+- **No values changes required for Kafka-IPC deployments** (the common case, including `bbo-blinkenlights`). The fallback path is automatic.
+
+### Known limitations (unchanged)
+
+- **Functional Kafka TLS is still not wired** in any of the three charts. `kafka.tls.enabled=true` flips the protocol to `SSL` / `SASL_SSL`, but the chart does NOT mount the `tls.existingSecret` into the pod or emit `ssl.truststore.location` / `ssl.keystore.location` properties. Tracked for a follow-up lock-step release.
+
 ## [0.3.3] — 2026-05-24
 
 ### Fixed
@@ -140,7 +163,8 @@ First published release of the OpenNMS Helm Charts.
 - `core.postgresql.host` defaults to a CNPG-specific hostname (`cluster-helm-lint-rw.default.svc.cluster.local`) used by the in-repo chart-testing flow. Production users must set `postgresql.host` explicitly — the chart fails template-time on missing host.
 - The optional `prometheus-remote-writer` plugin is downloaded from GitHub Releases at every pod start when enabled. Air-gapped clusters override `prometheusRemoteWriter.kar.url` to an internal mirror.
 
-[Unreleased]: https://github.com/labmonkeys-space/opennms-helm-charts/compare/v0.3.3...HEAD
+[Unreleased]: https://github.com/labmonkeys-space/opennms-helm-charts/compare/v0.3.4...HEAD
+[0.3.4]: https://github.com/labmonkeys-space/opennms-helm-charts/compare/v0.3.3...v0.3.4
 [0.3.3]: https://github.com/labmonkeys-space/opennms-helm-charts/compare/v0.3.2...v0.3.3
 [0.3.2]: https://github.com/labmonkeys-space/opennms-helm-charts/compare/v0.3.1...v0.3.2
 [0.3.1]: https://github.com/labmonkeys-space/opennms-helm-charts/compare/v0.3.0...v0.3.1

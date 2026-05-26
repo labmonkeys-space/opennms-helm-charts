@@ -1,9 +1,9 @@
 dependencies:
 - name: core
   repository: file://../core
-  version: 0.3.3
+  version: 0.3.4
 - name: sentinel
   repository: file://../sentinel
-  version: 0.3.3
-digest: sha256:21804dbcd8e247e279e050c41832a4f121c19b41d0c85d235f2ba9e9f1112564
-generated: "2026-05-24T11:34:28.366832+02:00"
+  version: 0.3.4
+digest: sha256:d8b1475406486b6d6a9a6ab95925b5aca0d2bbae77e8bd34fd1b498795707f88
+generated: "2026-05-26T15:23:48.737798+02:00"

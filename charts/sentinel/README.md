@@ -1,6 +1,6 @@
 # sentinel
 
-![Version: 0.3.3](https://img.shields.io/badge/Version-0.3.3-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: 36.0.0](https://img.shields.io/badge/AppVersion-36.0.0-informational?style=flat-square)
+![Version: 0.3.4](https://img.shields.io/badge/Version-0.3.4-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: 36.0.0](https://img.shields.io/badge/AppVersion-36.0.0-informational?style=flat-square)
 
 A Helm chart for Kubernetes
 
@@ -53,6 +53,7 @@ A Helm chart for Kubernetes
 | location | string | `"SENTINEL"` |  |
 | nameOverride | string | `""` |  |
 | nodeSelector | object | `{}` |  |
+| opennms.broker.existingSecret | string | `""` |  |
 | opennms.http.existingSecret | string | `""` |  |
 | podAnnotations | object | `{}` |  |
 | podLabels | object | `{}` |  |

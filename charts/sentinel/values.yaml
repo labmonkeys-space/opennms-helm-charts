@@ -97,9 +97,22 @@ prometheus:
 # container's `-c` entrypoint mode reads these env vars and persists them into
 # the SCV keystore. The Secret MUST exist before install (the chart does not
 # generate it).
+#
+# The upstream entrypoint's useEnvCredentials() unconditionally invokes
+# `scvcli set opennms.broker` alongside the HTTP call, even on Kafka-IPC
+# deployments where no JMS broker exists. When `broker.existingSecret` is left
+# empty (the default), the chart emits literal value: "unused" for the broker
+# env vars so the scvcli call completes — Sentinel writes a dummy
+# `opennms.broker` alias into etc/scv.jce which is never consulted in
+# Kafka-IPC mode. Operators that DO use a JMS broker can supply real
+# credentials via `broker.existingSecret`. The `broker` block is no-op in
+# lab mode (`http.existingSecret` empty → startup arg is `-f`, no scvcli).
 opennms:
   http:
     # Secret keys: OPENNMS_HTTP_USER, OPENNMS_HTTP_PASS
+    existingSecret: ""
+  broker:
+    # Secret keys: OPENNMS_BROKER_USER, OPENNMS_BROKER_PASS
     existingSecret: ""
 
 # BYO Postgres for Sentinel's distributed datasource. Sentinel writes flow
