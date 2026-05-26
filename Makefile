@@ -324,13 +324,14 @@ install-kafka: kind-create
 	@kubectl apply -f stubs/kafka/kafka.yaml 1>/dev/null
 	@echo "$(OK)"
 	@echo -n "⏱️ Waiting for Kafka ready    ... "
-	@kubectl wait --for=condition=available --timeout=300s deployment/kafka -n default 1>/dev/null
+	@kubectl wait --for=condition=ready --timeout=300s pod/kafka-0 -n default 1>/dev/null
 	@echo "$(OK)"
 
 .PHONY: clean-kafka
 clean-kafka: kind-create
 	@echo -n "🧼 Deleting Kafka stub        ... "
 	@kubectl delete -f stubs/kafka/kafka.yaml --ignore-not-found 1>/dev/null
+	@kubectl delete pvc -l app=kafka -n default --ignore-not-found 1>/dev/null
 	@echo "$(OK)"
 
 .PHONY: install-elasticsearch

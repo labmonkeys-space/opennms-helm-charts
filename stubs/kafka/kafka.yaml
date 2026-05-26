@@ -1,8 +1,9 @@
 ---
 # Single-pod Apache Kafka in KRaft mode for chart-testing only.
-# NOT a production deployment — no persistence, no auth, no replication.
+# NOT a production deployment — no auth, no replication. Persists to a
+# PVC so test state survives pod restarts in long-lived dev clusters.
 apiVersion: apps/v1
-kind: Deployment
+kind: StatefulSet
 metadata:
   namespace: default
   name: kafka
@@ -10,11 +11,10 @@ metadata:
     app: kafka
 spec:
   replicas: 1
+  serviceName: kafka
   selector:
     matchLabels:
       app: kafka
-  strategy:
-    type: Recreate
   template:
     metadata:
       labels:
@@ -22,7 +22,7 @@ spec:
     spec:
       containers:
         - name: kafka
-          image: apache/kafka:3.9.0
+          image: apache/kafka:4.3.0
           env:
             - name: KAFKA_NODE_ID
               value: "1"
@@ -64,6 +64,17 @@ spec:
               memory: 512Mi
             limits:
               memory: 1Gi
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/kafka/data
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        resources:
+          requests:
+            storage: 10Gi
 ---
 apiVersion: v1
 kind: Service
