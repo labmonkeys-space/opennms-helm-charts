@@ -3,6 +3,21 @@ entries:
   core:
   - apiVersion: v2
     appVersion: 36.0.0
+    created: "2026-05-27T14:04:22.079074168Z"
+    description: A Helm chart for Kubernetes
+    digest: 951ccadcb7650065a9d31494f14fc76dc1c32926bbbb663376f25c7cb4896929
+    icon: https://avatars.githubusercontent.com/u/2972482?s=200&v=4
+    maintainers:
+    - email: ronny@no42.org
+      name: indigo423
+      url: https://github.com/indigo423
+    name: core
+    type: application
+    urls:
+    - https://github.com/labmonkeys-space/opennms-helm-charts/releases/download/core-0.3.6/core-0.3.6.tgz
+    version: 0.3.6
+  - apiVersion: v2
+    appVersion: 36.0.0
     created: "2026-05-27T09:03:13.573799785Z"
     description: A Helm chart for Kubernetes
     digest: ebcbf38a62bb35f3c124d92950f3e491902f969df4bda2ed942970de7be8ba45
@@ -124,6 +139,20 @@ entries:
   minion:
   - apiVersion: v2
     appVersion: 36.0.0
+    created: "2026-05-27T14:04:22.334576081Z"
+    description: A Helm chart for Kubernetes
+    digest: cdf5272cb2d103d03673540ed1d3188be4ab35e213ca3fd1afb74314a9b0383a
+    maintainers:
+    - email: ronny@no42.org
+      name: indigo423
+      url: https://github.com/indigo423
+    name: minion
+    type: application
+    urls:
+    - https://github.com/labmonkeys-space/opennms-helm-charts/releases/download/minion-0.3.6/minion-0.3.6.tgz
+    version: 0.3.6
+  - apiVersion: v2
+    appVersion: 36.0.0
     created: "2026-05-27T09:03:13.832936074Z"
     description: A Helm chart for Kubernetes
     digest: 01290669b2bfb3e4761291c1cf7658fe1d1c221b0452fae5e1a4c8adb618ca6e
@@ -221,6 +250,31 @@ entries:
     - https://github.com/labmonkeys-space/opennms-helm-charts/releases/download/minion-0.1.0/minion-0.1.0.tgz
     version: 0.1.0
   opennms-stack:
+  - apiVersion: v2
+    appVersion: 36.0.0
+    created: "2026-05-27T14:04:22.542502115Z"
+    dependencies:
+    - name: core
+      repository: file://../core
+      version: =0.3.6
+    - name: sentinel
+      repository: file://../sentinel
+      version: =0.3.6
+    description: 'Umbrella Helm chart bundling OpenNMS Horizon Core and Sentinel for
+      the central OpenNMS site. Connects to BYO Postgres, Kafka, and Elasticsearch.
+      Minion is deployed independently per remote location and is NOT part of this
+      umbrella. '
+    digest: fec568f7a0dec9bfaec85d9412f166c4e02e1158da02f33d44a70905721c7e34
+    icon: https://avatars.githubusercontent.com/u/2972482?s=200&v=4
+    maintainers:
+    - email: ronny@no42.org
+      name: indigo423
+      url: https://github.com/indigo423
+    name: opennms-stack
+    type: application
+    urls:
+    - https://github.com/labmonkeys-space/opennms-helm-charts/releases/download/opennms-stack-0.3.6/opennms-stack-0.3.6.tgz
+    version: 0.3.6
   - apiVersion: v2
     appVersion: 36.0.0
     created: "2026-05-27T09:03:14.099415427Z"
@@ -424,6 +478,20 @@ entries:
   sentinel:
   - apiVersion: v2
     appVersion: 36.0.0
+    created: "2026-05-27T14:04:22.801297532Z"
+    description: A Helm chart for Kubernetes
+    digest: e521b85003f82acf64561f3a2148f16795cbc368220f5ccf63e78d28dd3016d6
+    maintainers:
+    - email: ronny@no42.org
+      name: indigo423
+      url: https://github.com/indigo423
+    name: sentinel
+    type: application
+    urls:
+    - https://github.com/labmonkeys-space/opennms-helm-charts/releases/download/sentinel-0.3.6/sentinel-0.3.6.tgz
+    version: 0.3.6
+  - apiVersion: v2
+    appVersion: 36.0.0
     created: "2026-05-27T09:03:14.366242296Z"
     description: A Helm chart for Kubernetes
     digest: 31755469718f8a3ff71b5e6fa21dccde0e0a384b53ce9cb29c76d75d7137c708
@@ -534,4 +602,4 @@ entries:
     urls:
     - https://github.com/labmonkeys-space/opennms-helm-charts/releases/download/sentinel-0.1.0/sentinel-0.1.0.tgz
     version: 0.1.0
-generated: "2026-05-27T09:03:14.366372012Z"
+generated: "2026-05-27T14:04:22.801446476Z"
