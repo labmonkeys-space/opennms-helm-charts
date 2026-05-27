@@ -8,6 +8,27 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). All
 
 (no unreleased changes yet)
 
+## [0.3.6] — 2026-05-27
+
+### Fixed
+
+- **`sentinel`** — Sentinel now actually uses Kafka-IPC at boot. Prior chart releases (0.3.0 through 0.3.5) rendered the Kafka client config (`org.opennms.core.ipc.sink.kafka.cfg`) into the etc-overlay but never overrode Sentinel's stock `featuresBoot.d/ipc-strategy.boot` — the upstream image ships that file with `sentinel-jms` enabled and `!sentinel-kafka` (negated). Result: every chart-deployed Sentinel since 0.3.0 has booted with JMS-IPC, attempted to connect to a non-existent local ActiveMQ broker (`tcp://127.0.0.1:61616`, ~30-second retry loop), and never registered with Core via Kafka. The chart now writes `featuresBoot.d/ipc-strategy.boot` containing `!sentinel-jms\nsentinel-kafka\n` AND a symmetric `opennms.properties.d/disable-activemq.properties` (`org.opennms.activemq.broker.disable=true`) when a Kafka bootstrap is configured. Surfaced by `bbo-blinkenlights` install verification at chart 0.3.5: Sentinel pod `Ready=True` with `/opennms/rest/minions` returning `totalCount=0` and 1500+ ActiveMQ retries in `karaf.log`.
+
+### Changed
+
+- **All four charts** — strict-pin cascade: `core`, `sentinel`, `minion`, `opennms-stack` all bump from `0.3.5` to `0.3.6`. Umbrella `dependencies` strict-pin updated to `=0.3.6`. `core`, `minion`, and `opennms-stack` chart contents are unchanged.
+
+### Notes (upgrade impact for 0.3.5 → 0.3.6 users)
+
+- **Sentinel will start producing real IPC traffic to Core for the first time** after this upgrade. Sentinel pods that have been silently degraded since chart 0.3.0 will roll, then boot with Kafka-IPC enabled, then register with Core. If you have downstream tooling that has been conditional on Sentinel being absent (e.g. monitoring dashboards that hide Sentinel rows because the registration was always empty), expect those views to start populating.
+- **If you've been routing around the broken chart-deployed Sentinel via an external mechanism** (manually-configured Sentinel outside the chart, or an alternative IPC path), this is the upgrade that brings the chart-deployed Sentinel back online. Decide which Sentinel to keep before applying.
+- **Operators using `extraConfigFiles` to write the same paths** (`featuresBoot.d/ipc-strategy.boot` or `opennms.properties.d/disable-activemq.properties`) — operator content continues to win; the chart-managed entries are only emitted when the operator hasn't already overridden the path.
+- **No values surface change.** Existing values files work unchanged at 0.3.6.
+
+### Known limitations (unchanged)
+
+- **Functional Kafka TLS is still not wired** in any of the three charts. `kafka.tls.enabled=true` flips the protocol to `SSL` / `SASL_SSL`, but the chart does NOT mount the `tls.existingSecret` into the pod or emit `ssl.truststore.location` / `ssl.keystore.location` properties. Tracked for a follow-up lock-step release.
+
 ## [0.3.5] — 2026-05-27
 
 ### Added

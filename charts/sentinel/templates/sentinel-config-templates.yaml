@@ -17,6 +17,17 @@
 
 {{- if include "sentinel.kafkaBootstrap" . -}}
 {{- $_ := set $files "org.opennms.core.ipc.sink.kafka.cfg" (include "sentinel.kafkaCfgBlock" .) -}}
+{{- /* Flip Karaf's IPC feature selection from the upstream Sentinel image's
+       default (sentinel-jms enabled, !sentinel-kafka) to the Kafka-IPC path.
+       Without this, the chart-rendered Kafka cfg above sits unread on disk
+       and Sentinel runs an ActiveMQ FailoverTransport retry loop against a
+       non-existent local broker. See change fix-sentinel-kafka-ipc-strategy
+       for the discovery + fix history. */ -}}
+{{- $_ := set $files "featuresBoot.d/ipc-strategy.boot" "!sentinel-jms\nsentinel-kafka\n" -}}
+{{- /* Suppress residual ActiveMQ client connections from non-IPC code paths.
+       Mirrors charts/core/templates/core-config-templates.yaml's
+       opennms.properties.d/disable-activemq.properties entry. */ -}}
+{{- $_ := set $files "opennms.properties.d/disable-activemq.properties" "org.opennms.activemq.broker.disable=true\n" -}}
 {{- end -}}
 
 {{- if include "sentinel.postgresHost" . -}}
