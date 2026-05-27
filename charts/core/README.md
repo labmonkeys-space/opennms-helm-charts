@@ -1,6 +1,6 @@
 # core
 
-![Version: 0.3.7](https://img.shields.io/badge/Version-0.3.7-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: 36.0.0](https://img.shields.io/badge/AppVersion-36.0.0-informational?style=flat-square)
+![Version: 0.3.8](https://img.shields.io/badge/Version-0.3.8-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: 36.0.0](https://img.shields.io/badge/AppVersion-36.0.0-informational?style=flat-square)
 
 A Helm chart for Kubernetes
 
@@ -94,7 +94,7 @@ A Helm chart for Kubernetes
 | prometheusRemoteWriter.enabled | bool | `false` |  |
 | prometheusRemoteWriter.kar.url | string | `""` |  |
 | prometheusRemoteWriter.readUrl | string | `""` |  |
-| prometheusRemoteWriter.version | string | `"0.3.2"` |  |
+| prometheusRemoteWriter.version | string | `"0.4.4"` |  |
 | prometheusRemoteWriter.writeUrl | string | `""` |  |
 | readinessProbe.failureThreshold | int | `20` |  |
 | readinessProbe.httpGet.path | string | `"/opennms/login.jsp"` |  |
