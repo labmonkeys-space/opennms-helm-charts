@@ -164,8 +164,11 @@ timeseriesStrategy: rrd
 # BYO Prometheus-compatible time-series backend via the
 # opennms-forge/prometheus-remote-writer plugin. When enabled, the chart:
 #   1. Downloads the published KAR into /opt/opennms/deploy at pod start.
-#   2. Renders org.opennms.plugins.tss.prometheus-remote-writer.cfg with the
-#      configured write/read URLs and optional auth.
+#   2. Renders org.opennms.plugins.tss.prometheusremotewriter.cfg with the
+#      configured write/read URLs and optional auth. (Plugin v0.4.x uses the
+#      collapsed PID; prior chart releases wrote the v0.3.x-shaped hyphenated
+#      filename, which becomes silently inert under v0.4.x — see CHANGELOG
+#      0.3.8 for the migration story.)
 #   3. Sets org.opennms.timeseries.strategy = integration in
 #      opennms.properties.d/timeseries.properties.
 #
@@ -177,7 +180,9 @@ timeseriesStrategy: rrd
 prometheusRemoteWriter:
   enabled: false
   # KAR version to install. Sets the default download URL on GitHub Releases.
-  version: "0.3.2"
+  # Pin matches the cfg filename rendered above — bumping this to a plugin
+  # release with a different ConfigAdmin PID requires a chart change too.
+  version: "0.4.4"
   kar:
     # Override to point at an internal mirror for air-gapped environments.
     # Leave empty to construct the default URL from `version`.

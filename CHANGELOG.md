@@ -8,6 +8,29 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). All
 
 (no unreleased changes yet)
 
+## [0.3.8] — 2026-05-27
+
+### Fixed
+
+- **`core`** — Chart-rendered prometheus-remote-writer plugin cfg now lands at the correct filename for plugin v0.4.x. Plugin v0.4.x renamed its ConfigAdmin PID from `org.opennms.plugins.tss.prometheus-remote-writer` (hyphenated) to `org.opennms.plugins.tss.prometheusremotewriter` (collapsed); chart releases 0.3.0 through 0.3.7 kept writing the v0.3.x-shaped hyphenated filename, which Karaf's fileinstall left unbound to any service. Symptom under v0.4.x plugin: recurring `WARN | PrometheusRemoteWriterStorage | prometheus-remote-writer not yet configured (write.url is required ... waiting for ConfigAdmin to deliver real properties)` in `/opt/opennms/logs/karaf.log`; the plugin runs as a bundle but never picks up its cfg, so no samples are written to the remote backend. Discovered in `bbo-blinkenlights` at chart 0.3.7 + plugin v0.4.4. The chart now renders `org.opennms.plugins.tss.prometheusremotewriter.cfg`.
+
+### Changed
+
+- **`core`** — Chart-default `prometheusRemoteWriter.version` bumped from `0.3.2` to `0.4.4`. The KAR-download URL helper constructs the GitHub Releases URL from this value, so the chart's default install + the cfg filename now target the same plugin major. Both fixes go together — they were two halves of the same underlying drift between chart defaults and plugin lifecycle.
+- **All four charts** — strict-pin cascade: `core`, `sentinel`, `minion`, `opennms-stack` all bump from `0.3.7` to `0.3.8`. Umbrella `dependencies` strict-pin updated to `=0.3.8`. `sentinel`, `minion`, and `opennms-stack` chart contents are unchanged.
+
+### Notes (upgrade impact for 0.3.7 → 0.3.8 users)
+
+- **Operators with `prometheusRemoteWriter.enabled: true`** will see the plugin actually pick up its cfg on the next Core pod restart. If you applied a manual workaround at 0.3.7 (writing the cfg again at the collapsed filename via `core.extraConfigFiles."org.opennms.plugins.tss.prometheusremotewriter.cfg"`), remove that workaround on the upgrade — the chart now writes the correct filename directly and the workaround would only duplicate the cfg on disk.
+- **Operators pinning `prometheusRemoteWriter.version` to a v0.3.x plugin** via values will hit the inverse problem (chart writes the collapsed filename, v0.3.x plugin expects hyphenated). Re-write the cfg through `core.extraConfigFiles."org.opennms.plugins.tss.prometheus-remote-writer.cfg"` until the pinned plugin version is updated. The chart targets the latest plugin major; the inverse hit on older plugins is documented but accepted.
+- **No values surface change.** Existing operator values continue to work — only the rendered filename + chart-default version moves.
+- **`bbo-blinkenlights` consumer cascade** — bbo bumps its helmfile pin from 0.3.7 to 0.3.8 AND removes the `extraConfigFiles."org.opennms.plugins.tss.prometheusremotewriter.cfg"` workaround it applied during the migrate-bbo-tsdb-to-prometheus-remote-write apply. End state: one plugin cfg file on disk.
+
+### Known limitations (unchanged)
+
+- **Functional Kafka TLS is still not wired** in any of the three charts. `kafka.tls.enabled=true` flips the protocol to `SSL` / `SASL_SSL`, but the chart does NOT mount the `tls.existingSecret` into the pod or emit `ssl.truststore.location` / `ssl.keystore.location` properties. Tracked for a follow-up lock-step release.
+- **No typed `prometheusRemoteWriter.instanceId` values knob.** The plugin's `instance.id` cfg key disambiguates multi-OpenNMS deployments writing to a shared Prometheus-compatible backend. The chart-rendered cfg omits it; the plugin logs an informational WARN at startup. Harmless for single-instance backends. Tracked as a future enhancement.
+
 ## [0.3.7] — 2026-05-27
 
 ### Fixed

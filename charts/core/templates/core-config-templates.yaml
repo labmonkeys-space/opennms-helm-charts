@@ -47,7 +47,12 @@
 {{- if .Values.prometheusRemoteWriter.auth.existingSecret -}}
 {{- $prwCfg = printf "%sauth.basic.username=${PRW_USERNAME}\nauth.basic.password=${PRW_PASSWORD}\n" $prwCfg -}}
 {{- end -}}
-{{- $_ := set $files "org.opennms.plugins.tss.prometheus-remote-writer.cfg" $prwCfg -}}
+{{- /* Plugin v0.4.x ConfigAdmin PID is the collapsed form (no hyphens); prior
+       chart releases wrote the v0.3.x-shaped hyphenated filename, leaving the
+       cfg silently inert under v0.4.x. See CHANGELOG 0.3.8 for the migration
+       story. Bumping the default `prometheusRemoteWriter.version` to a plugin
+       release that renames this PID again requires a coordinated chart change. */}}
+{{- $_ := set $files "org.opennms.plugins.tss.prometheusremotewriter.cfg" $prwCfg -}}
 {{- $_ := set $files "opennms.properties.d/timeseries.properties" "org.opennms.timeseries.strategy = integration\n" -}}
 {{- end }}
 
