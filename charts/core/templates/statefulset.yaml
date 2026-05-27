@@ -47,10 +47,7 @@ spec:
         {{- toYaml . | nindent 8 }}
       {{- end }}
       serviceAccountName: {{ include "core.serviceAccountName" . }}
-      {{- with .Values.podSecurityContext }}
-      securityContext:
-        {{- toYaml . | nindent 8 }}
-      {{- end }}
+      {{- include "core.podSecurityContext" . | nindent 6 }}
       initContainers:
         {{- if .Values.prometheusRemoteWriter.enabled }}
         {{- /* download the prometheus-remote-writer KAR into the OpenNMS overlay */}}

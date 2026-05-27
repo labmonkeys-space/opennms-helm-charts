@@ -430,6 +430,46 @@ whitelist, with a message naming the bad key and listing valid names.
 {{- end }}
 
 {{/*
+Pod-level securityContext for Core. Merges operator-supplied
+.Values.podSecurityContext with the chart-managed ICMP sysctl
+(net.ipv4.ping_group_range = "0 2147483647") when .Values.icmp.enabled is true.
+
+On name collision under sysctls, the chart-managed entry wins — operators
+wanting a different ping_group_range value should set icmp.enabled=false and
+configure the sysctl through podSecurityContext.sysctls themselves.
+
+Emits nothing when icmp.enabled is false AND podSecurityContext is empty,
+matching the pre-0.3.5 rendered shape exactly under those conditions.
+
+This helper is duplicated in charts/minion/templates/_helpers.tpl — keep them
+in sync. Consolidation into a shared library chart is a follow-up once a
+third subchart needs the same surface.
+*/}}
+{{- define "core.podSecurityContext" -}}
+{{- $ctx := deepCopy (default (dict) .Values.podSecurityContext) -}}
+{{- if .Values.icmp.enabled -}}
+  {{- $merged := list -}}
+  {{- $hasICMP := false -}}
+  {{- range $entry := (default (list) $ctx.sysctls) -}}
+    {{- if eq (index $entry "name") "net.ipv4.ping_group_range" -}}
+      {{- $hasICMP = true -}}
+      {{- $merged = append $merged (dict "name" "net.ipv4.ping_group_range" "value" "0 2147483647") -}}
+    {{- else -}}
+      {{- $merged = append $merged $entry -}}
+    {{- end -}}
+  {{- end -}}
+  {{- if not $hasICMP -}}
+    {{- $merged = append $merged (dict "name" "net.ipv4.ping_group_range" "value" "0 2147483647") -}}
+  {{- end -}}
+  {{- $_ := set $ctx "sysctls" $merged -}}
+{{- end -}}
+{{- if not (empty $ctx) -}}
+securityContext:
+  {{- toYaml $ctx | nindent 2 }}
+{{- end -}}
+{{- end }}
+
+{{/*
 Default URL to download the prometheus-remote-writer KAR. Override-able via
 .Values.prometheusRemoteWriter.kar.url for air-gapped/mirrored environments.
 */}}

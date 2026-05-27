@@ -1,0 +1,50 @@
+---
+# Post-install smoke test: confirms unprivileged ICMP works in this cluster.
+#
+# The test pod sets the same `net.ipv4.ping_group_range` sysctl that the
+# chart configures on the Minion StatefulSet, then runs an SOCK_DGRAM ping
+# against localhost. If the cluster's admission controller permits the
+# sysctl (the default Pod Security Standard `restricted` allows it since
+# k8s 1.18), the pod starts and ping succeeds with exit 0. If the policy
+# rejects the sysctl, the pod fails to admit — surfacing the constraint
+# immediately so the operator can set `minion.icmp.enabled: false`.
+#
+# When `minion.icmp.enabled: false`, the test still runs but reports a skip
+# (no-op success). The chart shipped with ICMP capability deliberately
+# disabled in that mode; testing it would be misleading.
+#
+# busybox ping uses SOCK_RAW unconditionally and would fail even with the
+# sysctl set, so the test installs alpine's `iputils` package which
+# transparently falls back to SOCK_DGRAM when the GID is permitted.
+apiVersion: v1
+kind: Pod
+metadata:
+  name: "{{ include "minion.fullname" . }}-test-icmp"
+  labels:
+    {{- include "minion.labels" . | nindent 4 }}
+  annotations:
+    "helm.sh/hook": test
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
+spec:
+  restartPolicy: Never
+  {{- if .Values.icmp.enabled }}
+  securityContext:
+    sysctls:
+      - name: net.ipv4.ping_group_range
+        value: "0 2147483647"
+  {{- end }}
+  containers:
+    - name: ping
+      image: alpine:3.19
+      command: ["sh", "-c"]
+      args:
+        - |
+          set -e
+          {{- if .Values.icmp.enabled }}
+          apk add --no-cache iputils >/dev/null
+          ping -c 1 -W 5 127.0.0.1
+          echo "ICMP smoke test passed: unprivileged ping works in this cluster."
+          {{- else }}
+          echo "minion.icmp.enabled is false — ICMP capability intentionally disabled."
+          echo "Skipping ICMP smoke test."
+          {{- end }}

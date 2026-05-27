@@ -8,6 +8,27 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). All
 
 (no unreleased changes yet)
 
+## [0.3.5] — 2026-05-27
+
+### Added
+
+- **`core` and `minion`** — new `icmp.enabled` values surface (boolean, default `true`). When enabled, the chart renders `spec.template.spec.securityContext.sysctls: [{name: net.ipv4.ping_group_range, value: "0 2147483647"}]` on the respective StatefulSet, granting every GID inside the pod the capability to open unprivileged `SOCK_DGRAM` ICMP sockets. This unblocks OpenNMS Pollerd and Discovery ICMP polling, which was silently broken in 0.3.0 through 0.3.4 — Core and Minion installed cleanly but could not even `ping localhost`. Operator-supplied `podSecurityContext` values pass through alongside; on a `sysctls` `name` collision, the chart-managed entry wins.
+- **`core` and `minion`** — new post-install `helm test` hook Pod (`<release>-{core,minion}-test-icmp`) that mirrors the rendered sysctl and runs an `iputils`-based `ping -c 1 127.0.0.1` to verify unprivileged ICMP works in this cluster. When `icmp.enabled: false`, the test renders without the sysctl and prints a skip message (exit 0). Sentinel does not poll ICMP and has no test.
+
+### Changed
+
+- **All four charts** — strict-pin cascade: `core`, `sentinel`, `minion`, `opennms-stack` all bump from `0.3.4` to `0.3.5`. Umbrella `dependencies` strict-pin updated to `=0.3.5`. `sentinel` chart contents are unchanged; the bump preserves the lock-step convention.
+
+### Notes (upgrade impact for 0.3.4 → 0.3.5 users)
+
+- **ICMP capability is on by default.** Existing Core and Minion deployments gain `net.ipv4.ping_group_range="0 2147483647"` on the pod's `securityContext.sysctls` at upgrade time. Pollerd/Discovery ICMP probes that previously failed silently will start succeeding — depending on your provisioning, this can show as new "node up" events for hosts that already had ICMP discovery configured but were never reachable. Review Pollerd / Discovery state after the upgrade if you have ICMP-conditional logic.
+- **Hardened clusters that forbid `net.ipv4.ping_group_range`** must set `core.icmp.enabled: false` and/or `minion.icmp.enabled: false` before upgrading. Pod Security Standard `restricted` permits the sysctl by default since k8s 1.18 — most clusters need no action. Clusters with bespoke admission policy that block "safe" sysctls are the affected category.
+- **`bbo-blinkenlights` consumers** — `add-bbo-netmon-deployment` task §4a (ICMP-capability blocker) clears with this release. Bump the helmfile pin from `0.3.4` to `0.3.5` and proceed with the install.
+
+### Known limitations (unchanged)
+
+- **Functional Kafka TLS is still not wired** in any of the three charts. `kafka.tls.enabled=true` flips the protocol to `SSL` / `SASL_SSL`, but the chart does NOT mount the `tls.existingSecret` into the pod or emit `ssl.truststore.location` / `ssl.keystore.location` properties. Tracked for a follow-up lock-step release.
+
 ## [0.3.4] — 2026-05-26
 
 ### Fixed

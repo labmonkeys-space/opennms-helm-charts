@@ -37,6 +37,20 @@ serviceAccount:
 podAnnotations: {}
 podLabels: {}
 
+# ICMP (ping) capability for Pollerd / Discovery. When enabled (default), the
+# chart adds `net.ipv4.ping_group_range="0 2147483647"` to the pod's sysctls,
+# which lets every GID inside the pod open unprivileged DGRAM ICMP sockets.
+# This is a "safe" sysctl in Kubernetes ≥1.18 — no kubelet flag required, and
+# Pod Security Standard `restricted` permits it.
+#
+# Set `enabled: false` on clusters whose admission policy forbids the sysctl;
+# ICMP polling will not function, but the chart otherwise renders cleanly.
+icmp:
+  enabled: true
+
+# Pod-level securityContext. The chart merges its ICMP sysctl (when enabled
+# above) with any operator-supplied entries here; chart-managed sysctl wins
+# on `name` collision.
 podSecurityContext: {}
 securityContext: {}
 

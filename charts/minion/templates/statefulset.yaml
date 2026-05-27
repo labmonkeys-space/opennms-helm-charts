@@ -47,10 +47,7 @@ spec:
         {{- toYaml . | nindent 8 }}
       {{- end }}
       serviceAccountName: {{ include "minion.serviceAccountName" . }}
-      {{- with .Values.podSecurityContext }}
-      securityContext:
-        {{- toYaml . | nindent 8 }}
-      {{- end }}
+      {{- include "minion.podSecurityContext" . | nindent 6 }}
       initContainers:
         {{- include "minion.envsubstInitContainer" . | nindent 8 }}
       containers:
