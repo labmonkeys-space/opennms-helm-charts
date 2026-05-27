@@ -39,7 +39,14 @@ jobs:
 
   # README regeneration — independent of lint and install. Auto-commits any
   # diff back to the branch on push.
+  #
+  # Skipped on tag pushes: actions/checkout puts the runner in detached-HEAD
+  # state for refs/tags/* refs, so the `git-push: true` step would fail with
+  # `fatal: You are not currently on a branch`. The docs commit happens on
+  # the prior `main` push that produced the tagged commit; the tagged commit
+  # itself doesn't need regeneration.
   helm-docs:
+    if: github.ref_type != 'tag'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
