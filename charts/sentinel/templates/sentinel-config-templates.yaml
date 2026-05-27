@@ -17,6 +17,13 @@
 
 {{- if include "sentinel.kafkaBootstrap" . -}}
 {{- $_ := set $files "org.opennms.core.ipc.sink.kafka.cfg" (include "sentinel.kafkaCfgBlock" .) -}}
+{{- /* The sink-kafka SERVER bundle (KafkaMessageConsumerManager) reads PID
+       `org.opennms.core.ipc.sink.kafka.consumer` — a separate cfg from the
+       sink-client PID above. Without this file the server-side blueprint
+       container fails to initialize at boot and Sentinel cannot consume
+       IPC messages. The cfg content is identical to sink.kafka.cfg; the
+       consumer bundle's blueprint supplies group.id=OpenNMS by default. */ -}}
+{{- $_ := set $files "org.opennms.core.ipc.sink.kafka.consumer.cfg" (include "sentinel.kafkaCfgBlock" .) -}}
 {{- /* Flip Karaf's IPC feature selection from the upstream Sentinel image's
        default (sentinel-jms enabled, !sentinel-kafka) to the Kafka-IPC path.
        Without this, the chart-rendered Kafka cfg above sits unread on disk

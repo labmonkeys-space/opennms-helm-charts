@@ -8,6 +8,27 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). All
 
 (no unreleased changes yet)
 
+## [0.3.7] — 2026-05-27
+
+### Fixed
+
+- **`sentinel`** — Sentinel's Kafka IPC consumer-side bundle (`org.opennms.core.ipc.sink.kafka.server`, hosts `KafkaMessageConsumerManager`) now starts cleanly at boot. 0.3.6 flipped Karaf's IPC feature selection from JMS to Kafka but exposed a deeper gap: the sink-server bundle's blueprint wires `OsgiKafkaConfigProvider` against PID `org.opennms.core.ipc.sink.kafka.consumer` — a separate cfg from the PID `org.opennms.core.ipc.sink.kafka` used by the sink-client bundle. The chart only wrote the latter. On 0.3.6, the sink-client started fine (producer connected to Kafka, Cluster ID retrieved), but the sink-server blueprint container failed with `Unable to initialize bean kafkaMessageConsumerManager` at `OsgiKafkaConfigProvider.getProperties` line 77 (`IOException` wrapped as `RuntimeException("Cannot load properties")`). Result: Sentinel could publish to Kafka but couldn't consume — `/opennms/rest/minions` returned `totalCount=0`. The chart now renders `org.opennms.core.ipc.sink.kafka.consumer.cfg` alongside the existing `org.opennms.core.ipc.sink.kafka.cfg` under the same `sentinel.kafkaBootstrap` gate, with identical content (the consumer bundle's blueprint supplies `group.id=OpenNMS` as a default).
+
+### Changed
+
+- **All four charts** — strict-pin cascade: `core`, `sentinel`, `minion`, `opennms-stack` all bump from `0.3.6` to `0.3.7`. Umbrella `dependencies` strict-pin updated to `=0.3.7`. `core`, `minion`, and `opennms-stack` chart contents are unchanged.
+
+### Notes (upgrade impact for 0.3.6 → 0.3.7 users)
+
+- **Sentinel will register with Core for the first time** after this upgrade + a manual `kubectl rollout restart deploy/<release>-sentinel`. Sentinel pods that have been silently degraded since chart 0.3.0 — first because of the JMS-IPC default (fixed in 0.3.6), then because of the missing consumer cfg (fixed here) — will finally consume Kafka IPC traffic and complete the registration handshake. `/opennms/rest/minions` flips from `totalCount=0` to `totalCount=1`.
+- **Manual Sentinel rollout still required after `helmfile apply`.** The Sentinel Deployment template doesn't carry a `checksum/config` annotation, so a ConfigMap content change doesn't auto-roll the pod. Tracked as a future improvement.
+- **Operators using `extraConfigFiles."org.opennms.core.ipc.sink.kafka.consumer.cfg"`** — operator content continues to win; the chart-managed entry is only emitted when the operator hasn't overridden the path.
+- **No values surface change.** Existing values files work unchanged at 0.3.7.
+
+### Known limitations (unchanged)
+
+- **Functional Kafka TLS is still not wired** in any of the three charts. `kafka.tls.enabled=true` flips the protocol to `SSL` / `SASL_SSL`, but the chart does NOT mount the `tls.existingSecret` into the pod or emit `ssl.truststore.location` / `ssl.keystore.location` properties. Tracked for a follow-up lock-step release.
+
 ## [0.3.6] — 2026-05-27
 
 ### Fixed
