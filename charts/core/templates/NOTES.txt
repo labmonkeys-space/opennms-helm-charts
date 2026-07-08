@@ -24,6 +24,17 @@ Image:      {{ include "core.image" . }}
     kubectl --namespace {{ .Release.Namespace }} port-forward svc/{{ include "core.fullname" . }} {{ .Values.service.webui.port }}:{{ .Values.service.webui.port }}
     echo "Then open http://127.0.0.1:{{ .Values.service.webui.port }}/opennms/"
 {{- end }}
+{{- if .Values.webAdmin.enabled }}
+
+    Web UI login: user "{{ .Values.webAdmin.username }}". The password was
+    generated on install and stored in a Secret — the default admin/admin no
+    longer works. Read the live password with:
+
+        kubectl --namespace {{ .Release.Namespace }} get secret {{ include "core.webAdminSecretName" . }} \
+          -o jsonpath='{.data.password}' | base64 -d ; echo
+
+    It is set once at install; change it in the UI afterward and it persists.
+{{- end }}
 
 ==============================================================================
 2. BYO Secret keys

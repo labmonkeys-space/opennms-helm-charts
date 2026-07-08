@@ -1,0 +1,129 @@
+{{- /*
+Post-install hook that bootstraps the Web UI `admin` password (see design.md
+D1/D3). Runs at INSTALL ONLY (`post-install`, not `post-upgrade`), so an
+upgrade never re-rotates the password. An init container waits for Core's
+WebUI/REST to accept requests, then the onmsctl container authenticates as the
+upstream default admin/admin and sets the password to the value in the Secret
+via Horizon's UserRestService (`hashPassword=true` → server hashes it).
+
+Idempotency: the call authenticates as admin/admin, valid on a fresh install.
+backoffLimit retries are safe as long as the password has not yet been changed
+server-side. The one gap: if Horizon applies the change but the pod dies before
+exit 0, later retries authenticate as admin/admin (now invalid) and fail — the
+password IS set, but the hook reports failure. Recovery: read the Secret and,
+if needed, re-apply manually (`onmsctl iam user set-password`). Because this is
+a `post-install` hook, a hook failure marks the Helm release failed even though
+Core itself is healthy; operators who cannot tolerate that set
+`webAdmin.enabled: false` (and provision the password out-of-band).
+*/ -}}
+{{- if .Values.webAdmin.enabled }}
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "core.fullname" . }}-webadmin-bootstrap
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "core.labels" . | nindent 4 }}
+  annotations:
+    "helm.sh/hook": post-install
+    "helm.sh/hook-weight": "5"
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
+spec:
+  backoffLimit: 3
+  ttlSecondsAfterFinished: 300
+  template:
+    metadata:
+      labels:
+        # Deliberately NOT core.selectorLabels: a hook pod carrying
+        # app.kubernetes.io/name + instance would be matched by the Core
+        # Service / PDB / ServiceMonitor selector while it runs. Emit an
+        # isolated component label set instead.
+        app.kubernetes.io/instance: {{ .Release.Name }}
+        app.kubernetes.io/component: webadmin-bootstrap
+        app.kubernetes.io/managed-by: {{ .Release.Service }}
+    spec:
+      restartPolicy: Never
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      # Non-root, restricted-friendly. fsGroup makes the mounted Secret
+      # group-readable so the onmsctl container (uid 65534) can read it; the
+      # 0440 mode keeps onmsctl's "readable beyond owner" from being a hard
+      # refusal (it only warns). See design.md verify 1.5.
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65534
+        runAsGroup: 65534
+        fsGroup: 65534
+        seccompProfile:
+          type: RuntimeDefault
+      initContainers:
+        # Wait for Core's WebUI/REST to accept requests before authenticating.
+        # Polls login.jsp (unauthenticated 200) — the same target as the
+        # chart's readinessProbe. See design.md D3 / verify 1.4.
+        - name: wait-for-core
+          image: "{{ .Values.configRenderer.image.repository }}:{{ .Values.configRenderer.image.tag }}"
+          imagePullPolicy: {{ .Values.configRenderer.image.pullPolicy | quote }}
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+          command:
+            - /bin/sh
+            - -c
+            - |
+              set -eu
+              url="http://{{ include "core.fullname" . }}:{{ .Values.service.webui.port }}/opennms/login.jsp"
+              i=0
+              until wget -q -O /dev/null "$url"; do
+                i=$((i+1))
+                if [ "$i" -ge {{ .Values.webAdmin.readiness.retries }} ]; then
+                  echo "core REST not ready after {{ .Values.webAdmin.readiness.retries }} attempts" >&2
+                  exit 1
+                fi
+                echo "waiting for core REST ($i/{{ .Values.webAdmin.readiness.retries }})..."
+                sleep {{ .Values.webAdmin.readiness.intervalSeconds }}
+              done
+      containers:
+        - name: set-admin-password
+          image: "{{ .Values.webAdmin.image.repository }}:{{ .Values.webAdmin.image.tag }}"
+          imagePullPolicy: {{ .Values.webAdmin.image.pullPolicy | quote }}
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+          args:
+            - iam
+            - user
+            - set-password
+            - {{ .Values.webAdmin.username | quote }}
+            - --from-file
+            - /seed/password
+          env:
+            - name: ONMS_URL
+              value: "http://{{ include "core.fullname" . }}:{{ .Values.service.webui.port }}/opennms"
+            # First-boot authentication uses the upstream default admin/admin —
+            # a public default, not a secret. The set-password call replaces it.
+            - name: ONMS_USER
+              value: "admin"
+            - name: ONMS_PASSWORD
+              value: "admin"
+          volumeMounts:
+            - name: seed
+              mountPath: /seed
+              readOnly: true
+      volumes:
+        - name: seed
+          secret:
+            secretName: {{ include "core.webAdminSecretName" . | quote }}
+            defaultMode: 0440
+            items:
+              # For a BYO existingSecret the password may live under a
+              # different key; always project it to the fixed path /seed/password.
+              - key: {{ .Values.webAdmin.existingSecretPasswordKey | default "password" }}
+                path: password
+{{- end }}

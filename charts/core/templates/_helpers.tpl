@@ -482,3 +482,25 @@ Default URL to download the prometheus-remote-writer KAR. Override-able via
 {{- printf "https://github.com/opennms-forge/prometheus-remote-writer/releases/download/v%s/prometheus-remote-writer-kar-%s.kar" $v $v -}}
 {{- end -}}
 {{- end }}
+
+{{/*
+Web UI admin Secret name — existingSecret > secretName > release-scoped default
+`<release>-opennms-admin`. Used by both the Secret template (when generating)
+and the post-install bootstrap Job (as the volume source, generated or BYO).
+*/}}
+{{- define "core.webAdminSecretName" -}}
+{{- $existing := .Values.webAdmin.existingSecret | default "" -}}
+{{- $name := .Values.webAdmin.secretName | default "" -}}
+{{- if $existing -}}{{ $existing }}
+{{- else if $name -}}{{ $name }}
+{{- else -}}{{ printf "%s-opennms-admin" .Release.Name | trunc 63 | trimSuffix "-" }}
+{{- end -}}
+{{- end }}
+
+{{/*
+Returns "true" when the chart should render its own Web UI admin Secret — i.e.
+when no operator `webAdmin.existingSecret` is supplied. Returns "" otherwise.
+*/}}
+{{- define "core.webAdminLabMode" -}}
+{{- if not (.Values.webAdmin.existingSecret | default "") -}}true{{- end -}}
+{{- end }}

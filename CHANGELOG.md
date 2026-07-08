@@ -8,6 +8,25 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). All
 
 (no unreleased changes yet)
 
+## [0.3.9] — 2026-07-08
+
+### Added
+
+- **`core`** — new `webAdmin` values block (default **enabled**) that bootstraps the Web UI `admin` password on first install. The chart generates a strong random password, stores it in a Kubernetes Secret (`<release>-opennms-admin`, keys `username`/`password`), and applies it to Horizon via a `post-install` hook `Job` running the `ghcr.io/no42-org/onmsctl` image: the Job waits for Core's REST API, authenticates as the upstream default `admin`/`admin`, and calls Horizon's `UserRestService` with `hashPassword=true` so the server hashes the value (no hash is computed chart-side and no `users.xml` is written). Administrators read the live password from the Secret:
+  `kubectl get secret <release>-opennms-admin -o jsonpath='{.data.password}' | base64 -d`.
+  **Bootstrap-seed semantics:** the password is set once at install and never re-asserted — the Secret is created only if absent (preserved across upgrades via Helm `lookup`), and operators can change the password in the UI afterward and it persists. Set `webAdmin.existingSecret` to apply a BYO password instead of generating one (with `webAdmin.existingSecretPasswordKey` when the Secret keys the password as something other than `password`; only the password is read — the account set is `webAdmin.username`), or `webAdmin.enabled: false` to disable the feature entirely. This closes the long-standing gap where Core shipped reachable with the public default `admin`/`admin`.
+- **repo** — new `docker` Dependabot ecosystem entry scanning `charts/core`, tracking the `webAdmin.image` (onmsctl) pin and, as a side effect, the existing `alpine` config-renderer pin. See the caveat comment in `.github/dependabot.yml` about non-`docker.io` registries (dependabot-core #12207).
+
+### Changed
+
+- **All four charts** — strict-pin cascade: `core`, `sentinel`, `minion`, `opennms-stack` all bump from `0.3.8` to `0.3.9`. Umbrella `dependencies` strict-pin updated to `=0.3.9`. `sentinel`, `minion`, and `opennms-stack` chart contents are unchanged (version bump only).
+
+### Notes (upgrade impact for 0.3.8 → 0.3.9 users)
+
+- **New default behavior on fresh installs.** A fresh `helm install` now rotates the `admin` password automatically and requires the `ghcr.io/no42-org/onmsctl` image to be reachable and Core to reach REST-ready within the hook's retry budget (`webAdmin.readiness.retries × intervalSeconds`, default ~10 min). Air-gapped operators mirror the image via `webAdmin.image.repository`; anyone who wants the old behavior sets `webAdmin.enabled: false`. `helm upgrade` does **not** re-run the hook and does **not** rotate an existing password. Because the hook is `post-install`, a failed hook marks the release failed even if Core is healthy; `helm install --wait`/`--atomic` must be given a `--timeout` ≥ `webAdmin.readiness.retries × intervalSeconds` (default ~10m).
+- **⚠️ Umbrella coupling — Minion/Sentinel that authenticate to Core as `admin` will be locked out.** Under `opennms-stack`, any Minion or Sentinel wired to Core via `opennms.http.existingSecret` using the shared `admin` account loses access once the password rotates on install. Provision a dedicated low-privilege Core user for those components (a follow-up will wire this via `onmsctl apply -f`), or set `core.webAdmin.enabled: false` before installing. Kafka-IPC deployments that don't use HTTP SCV credentials are unaffected.
+- **CI fixtures set `webAdmin.enabled: false`** so `ct install` never pulls the external image mid-test; the rendered shape is covered by helm-template tests.
+
 ## [0.3.8] — 2026-05-27
 
 ### Fixed
@@ -249,7 +268,8 @@ First published release of the OpenNMS Helm Charts.
 - `core.postgresql.host` defaults to a CNPG-specific hostname (`cluster-helm-lint-rw.default.svc.cluster.local`) used by the in-repo chart-testing flow. Production users must set `postgresql.host` explicitly — the chart fails template-time on missing host.
 - The optional `prometheus-remote-writer` plugin is downloaded from GitHub Releases at every pod start when enabled. Air-gapped clusters override `prometheusRemoteWriter.kar.url` to an internal mirror.
 
-[Unreleased]: https://github.com/labmonkeys-space/opennms-helm-charts/compare/v0.3.4...HEAD
+[Unreleased]: https://github.com/labmonkeys-space/opennms-helm-charts/compare/v0.3.9...HEAD
+[0.3.9]: https://github.com/labmonkeys-space/opennms-helm-charts/compare/v0.3.8...v0.3.9
 [0.3.4]: https://github.com/labmonkeys-space/opennms-helm-charts/compare/v0.3.3...v0.3.4
 [0.3.3]: https://github.com/labmonkeys-space/opennms-helm-charts/compare/v0.3.2...v0.3.3
 [0.3.2]: https://github.com/labmonkeys-space/opennms-helm-charts/compare/v0.3.1...v0.3.2

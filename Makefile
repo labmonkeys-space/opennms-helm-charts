@@ -156,6 +156,7 @@ dev-install-core: lint kind-create install-postgres install-stack-pg-secret
 		--set postgresql.host=cluster-helm-lint-rw.default.svc.cluster.local \
 		--set postgresql.auth.superuserSecret.name=opennms-stack-pg-superuser \
 		--set postgresql.auth.appSecret.name=opennms-stack-pg-app \
+		--set webAdmin.enabled=false \
 		1>/dev/null
 	@echo "$(OK)"
 	@echo ""
@@ -227,6 +228,7 @@ dev-install-stack: lint kind-create install-postgres install-stack-pg-secret ins
 		--set global.postgresql.auth.appSecret.name=opennms-stack-pg-app \
 		--set global.kafka.bootstrapServers=kafka.default.svc.cluster.local:9092 \
 		--set global.elasticsearch.url=http://elasticsearch.default.svc.cluster.local:9200 \
+		--set core.webAdmin.enabled=false \
 		1>/dev/null
 	@echo "$(OK)"
 	@echo ""
