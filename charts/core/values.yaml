@@ -92,6 +92,66 @@ httpRoute:
             type: PathPrefix
             value: /
 
+# Web UI admin account bootstrap.
+#
+# On first install (default enabled), the chart provisions a strong random
+# password for the Horizon Web UI `admin` user, stores it in a Kubernetes
+# Secret, and applies it to Horizon via a post-install hook Job running the
+# onmsctl image. An administrator with `get secret` permission reads the live
+# password from that Secret:
+#
+#   kubectl -n <namespace> get secret <release>-opennms-admin \
+#     -o jsonpath='{.data.password}' | base64 -d ; echo
+#
+# BOOTSTRAP-SEED SEMANTICS: the password is set ONCE at install. The chart
+# never re-asserts it — change it later in the UI and it sticks. The Secret is
+# created only if it does not already exist (preserved across upgrades via
+# Helm `lookup`), so `helm upgrade` and re-runs never rotate it.
+#
+# UMBRELLA WARNING: under opennms-stack, any Minion or Sentinel that
+# authenticates to Core as the shared `admin` account (via
+# `opennms.http.existingSecret`) will LOSE ACCESS once this password is set.
+# Provision a dedicated Core user for those components, or set `enabled: false`.
+#
+# To bring your own password instead of generating one, set `existingSecret`
+# to a Secret carrying keys `username` and `password`; the chart then applies
+# that password and generates no Secret of its own.
+webAdmin:
+  enabled: true
+  # Web UI account to bootstrap. The upstream default is `admin`.
+  username: admin
+  # Name of the chart-managed Secret. Empty → `<release>-opennms-admin`.
+  secretName: ""
+  # BYO: point at an existing Secret and the chart generates no Secret of its
+  # own. Only the password is read (from `existingSecretPasswordKey`); the
+  # account whose password is set is always `username` below — the Secret's
+  # own `username` key, if any, is NOT consulted.
+  existingSecret: ""
+  # Key within `existingSecret` that holds the password. Ignored for the
+  # chart-generated Secret (which always uses `password`).
+  existingSecretPasswordKey: password
+  # Length of the generated random alphanumeric password.
+  passwordLength: 24
+  # onmsctl image used by the post-install hook to apply the password via
+  # Horizon's REST API. Override `repository` for an air-gapped mirror.
+  image:
+    repository: ghcr.io/no42-org/onmsctl
+    tag: "0.4.2"
+    pullPolicy: IfNotPresent
+  # Bounded wait for Core's REST API before the hook applies the password.
+  # Per-attempt budget ≈ retries × intervalSeconds (default ~600s), and the
+  # Job's backoffLimit lets the wait re-run on each attempt — so worst-case
+  # wall time is roughly (backoffLimit + 1) × that. NOTE: the hook is
+  # `post-install`, so a `helm install --wait`/`--atomic` run must be given a
+  # `--timeout` covering the whole budget (Helm's default is only 5m) or the
+  # release fails/rolls back while Core is still starting. On a first-boot cold
+  # cluster Core can take several minutes to serve the WebUI. A failed hook
+  # marks the release failed even though Core is healthy — set `enabled: false`
+  # to opt out.
+  readiness:
+    retries: 60
+    intervalSeconds: 10
+
 # Persistent storage for /opennms-data (RRD time-series, MIBs, generated reports).
 # Disable only if your time-series backend is external AND you do not need
 # persistent MIBs/reports.

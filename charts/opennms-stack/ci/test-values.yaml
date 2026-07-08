@@ -40,6 +40,9 @@ core:
   daemons:
     ackd:
       enabled: true
+  # Disable the admin-password bootstrap in CI (see charts/core/ci/test-values.yaml).
+  webAdmin:
+    enabled: false
 
 sentinel:
   replicaCount: 1

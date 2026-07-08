@@ -29,3 +29,10 @@ postgresql:
 daemons:
   ackd:
     enabled: true
+
+# Disable the admin-password bootstrap in CI: `ct install` runs in an ephemeral
+# namespace and must not pull the external onmsctl image or depend on Core
+# reaching REST-ready within the hook's retry budget. The rendered shape of the
+# feature is covered by helm-template tests instead. (design.md D5)
+webAdmin:
+  enabled: false

@@ -31,3 +31,27 @@ updates:
         update-types:
           - "minor"
           - "patch"
+
+  # Container images pinned in chart values.yaml. Dependabot's docker ecosystem
+  # reads Helm-values images that use the split repository/tag shape, which the
+  # charts do. Tracks the onmsctl bootstrap image (webAdmin.image) and, as a
+  # side effect, the existing alpine config-renderer pin in charts/core.
+  #
+  # CAVEAT (dependabot-core #12207): the Helm/docker updater has been reported
+  # to query Docker Hub instead of the real registry for non-docker.io images.
+  # onmsctl lives on ghcr.io — verify a bump PR actually appears; if not, fall
+  # back to a scheduled tag-poll workflow (see change tasks 7.5).
+  - package-ecosystem: "docker"
+    directory: "/charts/core"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "07:00"
+      timezone: "Etc/UTC"
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "build"
+      include: "scope"
+    labels:
+      - "dependencies"
+      - "docker"

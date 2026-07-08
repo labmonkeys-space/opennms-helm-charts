@@ -34,6 +34,23 @@ And these Secrets in namespace {{ .Release.Namespace }}:
     keys: ELASTIC_USERNAME, ELASTIC_PASSWORD
 
   sentinel.opennms.http.existingSecret    keys: OPENNMS_HTTP_USER, OPENNMS_HTTP_PASS
+{{- if ne (((.Values.core).webAdmin).enabled) false }}
+{{- $adminSecret := include "core.webAdminSecretName" (dict "Values" (dict "webAdmin" (((.Values.core).webAdmin) | default dict)) "Release" .Release) }}
+
+==============================================================================
+Web UI admin password (bootstrapped by Core)
+==============================================================================
+Core set the Web UI "admin" password on install and stores it in Secret
+"{{ $adminSecret }}". The default admin/admin login no longer works. Read it:
+
+    kubectl --namespace {{ .Release.Namespace }} get secret {{ $adminSecret }} \
+      -o jsonpath='{.data.password}' | base64 -d ; echo
+
+⚠️  Any Minion or Sentinel that authenticates to Core as "admin" (via
+    opennms.http.existingSecret) lost access when this password was set.
+    Provision a dedicated Core user for those components, or reinstall with
+    core.webAdmin.enabled=false to keep the admin/admin default.
+{{- end }}
 
 ==============================================================================
 Deploying Minion at a remote location
