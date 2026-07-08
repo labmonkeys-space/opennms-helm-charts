@@ -124,6 +124,7 @@ spec:
             items:
               # For a BYO existingSecret the password may live under a
               # different key; always project it to the fixed path /seed/password.
-              - key: {{ .Values.webAdmin.existingSecretPasswordKey | default "password" }}
+              # Source key defaults to `password` (values.yaml).
+              - key: {{ .Values.webAdmin.existingSecretPasswordKey }}
                 path: password
 {{- end }}

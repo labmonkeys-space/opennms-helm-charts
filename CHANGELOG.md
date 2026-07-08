@@ -270,6 +270,10 @@ First published release of the OpenNMS Helm Charts.
 
 [Unreleased]: https://github.com/labmonkeys-space/opennms-helm-charts/compare/v0.3.9...HEAD
 [0.3.9]: https://github.com/labmonkeys-space/opennms-helm-charts/compare/v0.3.8...v0.3.9
+[0.3.8]: https://github.com/labmonkeys-space/opennms-helm-charts/compare/v0.3.7...v0.3.8
+[0.3.7]: https://github.com/labmonkeys-space/opennms-helm-charts/compare/v0.3.6...v0.3.7
+[0.3.6]: https://github.com/labmonkeys-space/opennms-helm-charts/compare/v0.3.5...v0.3.6
+[0.3.5]: https://github.com/labmonkeys-space/opennms-helm-charts/compare/v0.3.4...v0.3.5
 [0.3.4]: https://github.com/labmonkeys-space/opennms-helm-charts/compare/v0.3.3...v0.3.4
 [0.3.3]: https://github.com/labmonkeys-space/opennms-helm-charts/compare/v0.3.2...v0.3.3
 [0.3.2]: https://github.com/labmonkeys-space/opennms-helm-charts/compare/v0.3.1...v0.3.2

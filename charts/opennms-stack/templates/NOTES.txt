@@ -35,14 +35,15 @@ And these Secrets in namespace {{ .Release.Namespace }}:
 
   sentinel.opennms.http.existingSecret    keys: OPENNMS_HTTP_USER, OPENNMS_HTTP_PASS
 {{- if ne (((.Values.core).webAdmin).enabled) false }}
+{{- $adminSecret := include "core.webAdminSecretName" (dict "Values" (dict "webAdmin" (((.Values.core).webAdmin) | default dict)) "Release" .Release) }}
 
 ==============================================================================
 Web UI admin password (bootstrapped by Core)
 ==============================================================================
-Core generated a random Web UI "admin" password on install and stored it in a
-Secret. The default admin/admin login no longer works. Read the password:
+Core set the Web UI "admin" password on install and stores it in Secret
+"{{ $adminSecret }}". The default admin/admin login no longer works. Read it:
 
-    kubectl --namespace {{ .Release.Namespace }} get secret {{ .Release.Name }}-opennms-admin \
+    kubectl --namespace {{ .Release.Namespace }} get secret {{ $adminSecret }} \
       -o jsonpath='{.data.password}' | base64 -d ; echo
 
 ⚠️  Any Minion or Sentinel that authenticates to Core as "admin" (via

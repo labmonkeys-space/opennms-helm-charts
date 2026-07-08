@@ -139,12 +139,15 @@ webAdmin:
     tag: "0.4.2"
     pullPolicy: IfNotPresent
   # Bounded wait for Core's REST API before the hook applies the password.
-  # Total budget ≈ retries × intervalSeconds (default ~600s). NOTE: the hook
-  # is `post-install`, so a `helm install --wait`/`--atomic` run must be given
-  # a `--timeout` at least this large (Helm's default is 5m) or the release
-  # fails while Core is still starting. On a first-boot cold cluster Core can
-  # take several minutes to serve the WebUI. A failed hook marks the release
-  # failed even though Core is healthy — set `enabled: false` to opt out.
+  # Per-attempt budget ≈ retries × intervalSeconds (default ~600s), and the
+  # Job's backoffLimit lets the wait re-run on each attempt — so worst-case
+  # wall time is roughly (backoffLimit + 1) × that. NOTE: the hook is
+  # `post-install`, so a `helm install --wait`/`--atomic` run must be given a
+  # `--timeout` covering the whole budget (Helm's default is only 5m) or the
+  # release fails/rolls back while Core is still starting. On a first-boot cold
+  # cluster Core can take several minutes to serve the WebUI. A failed hook
+  # marks the release failed even though Core is healthy — set `enabled: false`
+  # to opt out.
   readiness:
     retries: 60
     intervalSeconds: 10
