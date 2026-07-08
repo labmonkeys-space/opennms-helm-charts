@@ -15,12 +15,12 @@ nameOverride: ""
 fullnameOverride: ""
 
 # Init container that envsubst-renders placeholder .cfg files into the
-# etc-overlay before the runtime container starts. Default: alpine:3.19 with
+# etc-overlay before the runtime container starts. Default: alpine:3.24 with
 # `apk add gettext` at startup.
 configRenderer:
   image:
     repository: docker.io/alpine
-    tag: "3.19"
+    tag: "3.24"
     pullPolicy: IfNotPresent
 
 serviceAccount:
