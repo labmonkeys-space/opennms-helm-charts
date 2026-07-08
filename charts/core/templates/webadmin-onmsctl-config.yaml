@@ -1,0 +1,34 @@
+{{- /*
+onmsctl config file for the admin-password bootstrap hook. onmsctl 0.4.2
+requires a config file to exist (env vars are only overrides on top of a
+loaded context), so the hook Job mounts this and points ONMSCTL_CONFIG at it.
+
+The context's basic auth is the upstream default admin/admin — the public
+first-boot login the hook replaces, not a secret. Rendered as a `post-install`
+hook (weight 0, before the Job at weight 5) and cleaned up on success.
+*/ -}}
+{{- if .Values.webAdmin.enabled }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "core.fullname" . }}-webadmin-onmsctl
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "core.labels" . | nindent 4 }}
+  annotations:
+    "helm.sh/hook": post-install
+    "helm.sh/hook-weight": "0"
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
+data:
+  config.yaml: |
+    current-context: bootstrap
+    contexts:
+      - name: bootstrap
+        server:
+          url: http://{{ include "core.fullname" . }}:{{ .Values.service.webui.port }}/opennms
+        auth:
+          basic:
+            username: admin
+            password: admin
+{{- end }}

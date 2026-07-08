@@ -8,6 +8,16 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). All
 
 (no unreleased changes yet)
 
+## [0.3.10] — 2026-07-08
+
+### Fixed
+
+- **`core`** — the Web UI admin-password bootstrap hook shipped in 0.3.9 never succeeded; a fresh `helm install` failed at the `post-install` hook (`Job Failed`). Two `onmsctl` integration bugs, both found via a live kind e2e against `opennms/horizon:36.0.0` + `onmsctl:0.4.2`:
+  1. **onmsctl requires a config file.** The `ONMS_URL`/`ONMS_USER`/`ONMS_PASSWORD` env vars the hook passed are only overrides on top of a *loaded context*, so onmsctl exited 2 (`config file not found …`) before issuing any REST call. The hook now renders and mounts an onmsctl config ConfigMap (`<release>-core-webadmin-onmsctl` — a `bootstrap` context carrying the Core URL and the public default `admin`/`admin` login) and sets `ONMSCTL_CONFIG`.
+  2. **onmsctl refuses symlinked `--from-file` targets, and Kubernetes secret volume mounts are symlinks** (the `..data` indirection), so `--from-file /seed/password` always failed. The generated password is now delivered via `--from-env` (projected with a `secretKeyRef`); the secret volume mount and the `fsGroup`/`defaultMode: 0440` handling are removed.
+  Additionally, the init container now waits on the authenticated `/opennms/rest/users` endpoint (200 for `admin`/`admin`) instead of `login.jsp`, so onmsctl no longer races ahead of a REST layer that Jetty reports "up" before it can serve. Verified end-to-end on kind: fresh install rotates the password, `admin`/`admin` → 401, the Secret's password → 200.
+- **All four charts** — strict-pin cascade 0.3.9 → 0.3.10. Umbrella `dependencies` updated to `=0.3.10`. `sentinel`, `minion`, and `opennms-stack` chart contents are unchanged (version bump only).
+
 ## [0.3.9] — 2026-07-08
 
 ### Added
@@ -268,7 +278,8 @@ First published release of the OpenNMS Helm Charts.
 - `core.postgresql.host` defaults to a CNPG-specific hostname (`cluster-helm-lint-rw.default.svc.cluster.local`) used by the in-repo chart-testing flow. Production users must set `postgresql.host` explicitly — the chart fails template-time on missing host.
 - The optional `prometheus-remote-writer` plugin is downloaded from GitHub Releases at every pod start when enabled. Air-gapped clusters override `prometheusRemoteWriter.kar.url` to an internal mirror.
 
-[Unreleased]: https://github.com/labmonkeys-space/opennms-helm-charts/compare/v0.3.9...HEAD
+[Unreleased]: https://github.com/labmonkeys-space/opennms-helm-charts/compare/v0.3.10...HEAD
+[0.3.10]: https://github.com/labmonkeys-space/opennms-helm-charts/compare/v0.3.9...v0.3.10
 [0.3.9]: https://github.com/labmonkeys-space/opennms-helm-charts/compare/v0.3.8...v0.3.9
 [0.3.8]: https://github.com/labmonkeys-space/opennms-helm-charts/compare/v0.3.7...v0.3.8
 [0.3.7]: https://github.com/labmonkeys-space/opennms-helm-charts/compare/v0.3.6...v0.3.7
