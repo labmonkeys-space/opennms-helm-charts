@@ -8,41 +8,28 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). All
 
 (no unreleased changes yet)
 
-## [0.3.11] — 2026-07-08
+## [0.4.0] — 2026-07-09
 
-### Changed
-
-- **`core`** — config-renderer init image `docker.io/alpine` bumped `3.19` → `3.24` (Dependabot). The image only provides the envsubst render step (`apk add gettext`) and the webAdmin bootstrap wait (`wget`/`base64`); CI `test-install-*` passes on `3.24`.
-- **All four charts** — strict-pin cascade 0.3.10 → 0.3.11. Umbrella `dependencies` updated to `=0.3.11`. `sentinel`, `minion`, and `opennms-stack` chart contents are unchanged (version bump only).
-
-## [0.3.10] — 2026-07-08
-
-### Fixed
-
-- **`core`** — the Web UI admin-password bootstrap hook shipped in 0.3.9 never succeeded; a fresh `helm install` failed at the `post-install` hook (`Job Failed`). Two `onmsctl` integration bugs, both found via a live kind e2e against `opennms/horizon:36.0.0` + `onmsctl:0.4.2`:
-  1. **onmsctl requires a config file.** The `ONMS_URL`/`ONMS_USER`/`ONMS_PASSWORD` env vars the hook passed are only overrides on top of a *loaded context*, so onmsctl exited 2 (`config file not found …`) before issuing any REST call. The hook now renders and mounts an onmsctl config ConfigMap (`<release>-core-webadmin-onmsctl` — a `bootstrap` context carrying the Core URL and the public default `admin`/`admin` login) and sets `ONMSCTL_CONFIG`.
-  2. **onmsctl refuses symlinked `--from-file` targets, and Kubernetes secret volume mounts are symlinks** (the `..data` indirection), so `--from-file /seed/password` always failed. The generated password is now delivered via `--from-env` (projected with a `secretKeyRef`); the secret volume mount and the `fsGroup`/`defaultMode: 0440` handling are removed.
-  Additionally, the init container now waits on the authenticated `/opennms/rest/users` endpoint (200 for `admin`/`admin`) instead of `login.jsp`, so onmsctl no longer races ahead of a REST layer that Jetty reports "up" before it can serve. Verified end-to-end on kind: fresh install rotates the password, `admin`/`admin` → 401, the Secret's password → 200.
-- **All four charts** — strict-pin cascade 0.3.9 → 0.3.10. Umbrella `dependencies` updated to `=0.3.10`. `sentinel`, `minion`, and `opennms-stack` chart contents are unchanged (version bump only).
-
-## [0.3.9] — 2026-07-08
+First tagged release since v0.3.8. Chart versions 0.3.9–0.3.11 were
+development-only (bumped on `main`, never tagged); their changes are
+consolidated here.
 
 ### Added
 
-- **`core`** — new `webAdmin` values block (default **enabled**) that bootstraps the Web UI `admin` password on first install. The chart generates a strong random password, stores it in a Kubernetes Secret (`<release>-opennms-admin`, keys `username`/`password`), and applies it to Horizon via a `post-install` hook `Job` running the `ghcr.io/no42-org/onmsctl` image: the Job waits for Core's REST API, authenticates as the upstream default `admin`/`admin`, and calls Horizon's `UserRestService` with `hashPassword=true` so the server hashes the value (no hash is computed chart-side and no `users.xml` is written). Administrators read the live password from the Secret:
-  `kubectl get secret <release>-opennms-admin -o jsonpath='{.data.password}' | base64 -d`.
-  **Bootstrap-seed semantics:** the password is set once at install and never re-asserted — the Secret is created only if absent (preserved across upgrades via Helm `lookup`), and operators can change the password in the UI afterward and it persists. Set `webAdmin.existingSecret` to apply a BYO password instead of generating one (with `webAdmin.existingSecretPasswordKey` when the Secret keys the password as something other than `password`; only the password is read — the account set is `webAdmin.username`), or `webAdmin.enabled: false` to disable the feature entirely. This closes the long-standing gap where Core shipped reachable with the public default `admin`/`admin`.
-- **repo** — new `docker` Dependabot ecosystem entry scanning `charts/core`, tracking the `webAdmin.image` (onmsctl) pin and, as a side effect, the existing `alpine` config-renderer pin. See the caveat comment in `.github/dependabot.yml` about non-`docker.io` registries (dependabot-core #12207).
+- **`core`** — new `webAdmin` values block (default **enabled**) that bootstraps the Web UI `admin` password on first install. The chart generates a strong random password, stores it in a Kubernetes Secret (`<release>-opennms-admin`, keys `username`/`password`), and applies it to Horizon via a `post-install` hook `Job` running `ghcr.io/no42-org/onmsctl`: the Job mounts an onmsctl config context (via `ONMSCTL_CONFIG`), waits for the authenticated REST API (`/opennms/rest/users`), and sets the password — plaintext delivered via `--from-env` and hashed server-side (`hashPassword=true`), so no hash is computed chart-side and no `users.xml` is written. **Bootstrap-seed semantics:** set once at install, never re-asserted; the Secret is created only if absent (preserved across upgrades via Helm `lookup`), and a UI password change afterward persists. Read the live password with `kubectl get secret <release>-opennms-admin -o jsonpath='{.data.password}' | base64 -d`. Bring your own via `webAdmin.existingSecret` (+ `webAdmin.existingSecretPasswordKey` for a non-default key), or disable with `webAdmin.enabled: false`. Validated end-to-end on kind (Horizon 36.0.x): fresh install rotates the password (`admin`/`admin` → 401, Secret password → 200); `helm upgrade` does not re-run the hook or rotate; the BYO and disabled paths behave as specified. This closes the long-standing gap where Core shipped reachable with the public default `admin`/`admin`.
+- **repo** — new `docker` Dependabot ecosystem scanning `charts/core`, tracking the `webAdmin.image` (onmsctl) pin and the `alpine` config-renderer pin. See the non-`docker.io` registry caveat in `.github/dependabot.yml` (dependabot-core #12207).
 
 ### Changed
 
-- **All four charts** — strict-pin cascade: `core`, `sentinel`, `minion`, `opennms-stack` all bump from `0.3.8` to `0.3.9`. Umbrella `dependencies` strict-pin updated to `=0.3.9`. `sentinel`, `minion`, and `opennms-stack` chart contents are unchanged (version bump only).
+- **All four charts** — `appVersion` bumped `36.0.0` → **`36.0.2`** (upstream OpenNMS Horizon), lock-step. The default `opennms/horizon` image tag follows `appVersion`, so pods pull `36.0.2` on the next roll.
+- **`core`** — config-renderer init image `docker.io/alpine` bumped `3.19` → `3.24`.
+- **All four charts** — chart `version` bumped `0.3.8` → **`0.4.0`** (minor: new admin-bootstrap feature). Umbrella `dependencies` strict-pinned to `=0.4.0`. `sentinel`, `minion`, and `opennms-stack` chart contents are otherwise unchanged.
 
-### Notes (upgrade impact for 0.3.8 → 0.3.9 users)
+### Upgrade impact (0.3.8 → 0.4.0)
 
-- **New default behavior on fresh installs.** A fresh `helm install` now rotates the `admin` password automatically and requires the `ghcr.io/no42-org/onmsctl` image to be reachable and Core to reach REST-ready within the hook's retry budget (`webAdmin.readiness.retries × intervalSeconds`, default ~10 min). Air-gapped operators mirror the image via `webAdmin.image.repository`; anyone who wants the old behavior sets `webAdmin.enabled: false`. `helm upgrade` does **not** re-run the hook and does **not** rotate an existing password. Because the hook is `post-install`, a failed hook marks the release failed even if Core is healthy; `helm install --wait`/`--atomic` must be given a `--timeout` ≥ `webAdmin.readiness.retries × intervalSeconds` (default ~10m).
-- **⚠️ Umbrella coupling — Minion/Sentinel that authenticate to Core as `admin` will be locked out.** Under `opennms-stack`, any Minion or Sentinel wired to Core via `opennms.http.existingSecret` using the shared `admin` account loses access once the password rotates on install. Provision a dedicated low-privilege Core user for those components (a follow-up will wire this via `onmsctl apply -f`), or set `core.webAdmin.enabled: false` before installing. Kafka-IPC deployments that don't use HTTP SCV credentials are unaffected.
-- **CI fixtures set `webAdmin.enabled: false`** so `ct install` never pulls the external image mid-test; the rendered shape is covered by helm-template tests.
+- **Fresh installs rotate the admin password by default.** The bootstrap requires the `onmsctl` image to be reachable and Core to reach REST-ready within `webAdmin.readiness` (default ~10 min); `helm install --wait`/`--atomic` must pass a `--timeout` covering that budget or the release fails/rolls back while Core is still starting. Air-gapped clusters mirror the image via `webAdmin.image.repository`; set `webAdmin.enabled: false` to keep the upstream `admin`/`admin` default.
+- **⚠️ Umbrella coupling.** Under `opennms-stack`, any Minion or Sentinel authenticating to Core as the shared `admin` account (via `opennms.http.existingSecret`) loses access once the password rotates. Provision a dedicated Core user, or set `core.webAdmin.enabled: false`. Kafka-IPC deployments without HTTP SCV credentials are unaffected.
+- **Horizon 36.0.2.** Review the upstream 36.0.1/36.0.2 release notes before upgrading production; the default image tag moves with `appVersion`.
 
 ## [0.3.8] — 2026-05-27
 
@@ -285,10 +272,8 @@ First published release of the OpenNMS Helm Charts.
 - `core.postgresql.host` defaults to a CNPG-specific hostname (`cluster-helm-lint-rw.default.svc.cluster.local`) used by the in-repo chart-testing flow. Production users must set `postgresql.host` explicitly — the chart fails template-time on missing host.
 - The optional `prometheus-remote-writer` plugin is downloaded from GitHub Releases at every pod start when enabled. Air-gapped clusters override `prometheusRemoteWriter.kar.url` to an internal mirror.
 
-[Unreleased]: https://github.com/labmonkeys-space/opennms-helm-charts/compare/v0.3.11...HEAD
-[0.3.11]: https://github.com/labmonkeys-space/opennms-helm-charts/compare/v0.3.10...v0.3.11
-[0.3.10]: https://github.com/labmonkeys-space/opennms-helm-charts/compare/v0.3.9...v0.3.10
-[0.3.9]: https://github.com/labmonkeys-space/opennms-helm-charts/compare/v0.3.8...v0.3.9
+[Unreleased]: https://github.com/labmonkeys-space/opennms-helm-charts/compare/v0.4.0...HEAD
+[0.4.0]: https://github.com/labmonkeys-space/opennms-helm-charts/compare/v0.3.8...v0.4.0
 [0.3.8]: https://github.com/labmonkeys-space/opennms-helm-charts/compare/v0.3.7...v0.3.8
 [0.3.7]: https://github.com/labmonkeys-space/opennms-helm-charts/compare/v0.3.6...v0.3.7
 [0.3.6]: https://github.com/labmonkeys-space/opennms-helm-charts/compare/v0.3.5...v0.3.6
