@@ -8,6 +8,13 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). All
 
 (no unreleased changes yet)
 
+## [0.3.11] — 2026-07-08
+
+### Changed
+
+- **`core`** — config-renderer init image `docker.io/alpine` bumped `3.19` → `3.24` (Dependabot). The image only provides the envsubst render step (`apk add gettext`) and the webAdmin bootstrap wait (`wget`/`base64`); CI `test-install-*` passes on `3.24`.
+- **All four charts** — strict-pin cascade 0.3.10 → 0.3.11. Umbrella `dependencies` updated to `=0.3.11`. `sentinel`, `minion`, and `opennms-stack` chart contents are unchanged (version bump only).
+
 ## [0.3.10] — 2026-07-08
 
 ### Fixed
@@ -278,7 +285,8 @@ First published release of the OpenNMS Helm Charts.
 - `core.postgresql.host` defaults to a CNPG-specific hostname (`cluster-helm-lint-rw.default.svc.cluster.local`) used by the in-repo chart-testing flow. Production users must set `postgresql.host` explicitly — the chart fails template-time on missing host.
 - The optional `prometheus-remote-writer` plugin is downloaded from GitHub Releases at every pod start when enabled. Air-gapped clusters override `prometheusRemoteWriter.kar.url` to an internal mirror.
 
-[Unreleased]: https://github.com/labmonkeys-space/opennms-helm-charts/compare/v0.3.10...HEAD
+[Unreleased]: https://github.com/labmonkeys-space/opennms-helm-charts/compare/v0.3.11...HEAD
+[0.3.11]: https://github.com/labmonkeys-space/opennms-helm-charts/compare/v0.3.10...v0.3.11
 [0.3.10]: https://github.com/labmonkeys-space/opennms-helm-charts/compare/v0.3.9...v0.3.10
 [0.3.9]: https://github.com/labmonkeys-space/opennms-helm-charts/compare/v0.3.8...v0.3.9
 [0.3.8]: https://github.com/labmonkeys-space/opennms-helm-charts/compare/v0.3.7...v0.3.8
