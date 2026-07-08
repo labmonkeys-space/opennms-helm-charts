@@ -37,10 +37,13 @@ updates:
   # charts do. Tracks the onmsctl bootstrap image (webAdmin.image) and, as a
   # side effect, the existing alpine config-renderer pin in charts/core.
   #
-  # CAVEAT (dependabot-core #12207): the Helm/docker updater has been reported
-  # to query Docker Hub instead of the real registry for non-docker.io images.
-  # onmsctl lives on ghcr.io — verify a bump PR actually appears; if not, fall
-  # back to a scheduled tag-poll workflow (see change tasks 7.5).
+  # VERIFIED (2026-07-08, Dependabot `docker in /charts/core` run log): the
+  # updater queries ghcr.io directly for onmsctl (tags/list + manifests → 200)
+  # and docker.io for alpine, and opens bump PRs correctly (alpine 3.19 → 3.24,
+  # PR #14). dependabot-core #12207 (Helm/docker updater querying Docker Hub for
+  # non-docker.io registries) does NOT affect this setup, so no tag-poll
+  # fallback is needed. onmsctl produces no PR only because the pin already
+  # tracks its latest tag.
   - package-ecosystem: "docker"
     directory: "/charts/core"
     schedule:
