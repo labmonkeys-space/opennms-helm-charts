@@ -136,7 +136,7 @@ webAdmin:
   # Horizon's REST API. Override `repository` for an air-gapped mirror.
   image:
     repository: ghcr.io/no42-org/onmsctl
-    tag: "0.4.2"
+    tag: "0.4.3"
     pullPolicy: IfNotPresent
   # Bounded wait for Core's REST API before the hook applies the password.
   # Per-attempt budget ≈ retries × intervalSeconds (default ~600s), and the
