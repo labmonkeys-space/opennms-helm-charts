@@ -164,6 +164,13 @@ persistence:
 
 resources: {}
 
+# Container resize policy for in-place pod resize (Kubernetes 1.33+).
+# A JVM reads its memory limit only at startup, so pair a memory change with
+# a container restart and let CPU change live:
+#   - {resourceName: cpu, restartPolicy: NotRequired}
+#   - {resourceName: memory, restartPolicy: RestartContainer}
+resizePolicy: []
+
 # Liveness uses tcpSocket on the webui port — fails if the JVM is dead OR has
 # dropped its WebUI listener. Readiness uses login.jsp until /opennms/rest/health
 # can be wired with credentials in a future chart version.

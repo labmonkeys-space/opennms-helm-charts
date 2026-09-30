@@ -1,0 +1,23 @@
+# Copyright 2026 Ronny Trommer <ronny@no42.org>
+# SPDX-License-Identifier: Apache-2.0
+suite: minion resizePolicy
+templates:
+  - templates/statefulset.yaml
+set:
+  location: test
+tests:
+  - it: renders no resizePolicy by default
+    asserts:
+      - notExists:
+          path: spec.template.spec.containers[0].resizePolicy
+  - it: renders the configured resizePolicy on the main container
+    set:
+      resizePolicy:
+        - {resourceName: cpu, restartPolicy: NotRequired}
+        - {resourceName: memory, restartPolicy: RestartContainer}
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].resizePolicy
+          value:
+            - {resourceName: cpu, restartPolicy: NotRequired}
+            - {resourceName: memory, restartPolicy: RestartContainer}

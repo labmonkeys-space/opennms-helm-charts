@@ -59,6 +59,13 @@ service:
 
 resources: {}
 
+# Container resize policy for in-place pod resize (Kubernetes 1.33+).
+# A JVM reads its memory limit only at startup, so pair a memory change with
+# a container restart and let CPU change live:
+#   - {resourceName: cpu, restartPolicy: NotRequired}
+#   - {resourceName: memory, restartPolicy: RestartContainer}
+resizePolicy: []
+
 # The chart overrides the upstream image's sshHost=127.0.0.1 with 0.0.0.0
 # (see charts/minion/templates/minion-config-templates.yaml), so Karaf SSH
 # binds the pod IP and a tcpSocket probe through the pod's network works.
