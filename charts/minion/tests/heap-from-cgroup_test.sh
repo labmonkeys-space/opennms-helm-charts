@@ -26,7 +26,8 @@ check() {
     read -r -a more <<< "$extra"
     envs+=("${more[@]}")
   fi
-  got="$(env -u JAVA_MIN_MEM -u JAVA_MAX_MEM "${envs[@]}" bash "$script" -f 2>/dev/null)"
+  got="$(env -u JAVA_MIN_MEM -u JAVA_MAX_MEM "${envs[@]}" bash "$script" -f 2>"$tmp/stderr")" \
+    || got="<exit $?: $(tr '\n' ' ' < "$tmp/stderr")>"
   if [[ "$got" == "$want" ]]; then echo "ok   $name"; else echo "FAIL $name: got '$got' want '$want'"; fail=1; fi
 }
 
