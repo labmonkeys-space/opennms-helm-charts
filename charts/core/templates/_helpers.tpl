@@ -401,6 +401,22 @@ To add the next daemon: append one entry below AND mention it in values.yaml.
 */}}
 {{- define "core.daemonsEnvWhitelist" -}}
 ackd: ACKD
+actiond: ACTIOND
+bsmd: BSMD
+collectd: COLLECTD
+discovery: DISCOVERY
+enhancedlinkd: ENHANCEDLINKD
+eventtranslator: EVENTTRANSLATOR
+notifd: NOTIFD
+passivestatusd: PASSIVESTATUSD
+perspectivepoller: PERSPECTIVEPOLLER
+pollerd: POLLERD
+queued: QUEUED
+rtcd: RTCD
+scriptd: SCRIPTD
+statsd: STATSD
+telemetryd: TELEMETRYD
+ticketer: TICKETER
 {{- end }}
 
 {{/*
