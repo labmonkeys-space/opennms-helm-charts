@@ -259,7 +259,8 @@ prometheusRemoteWriter:
   auth:
     existingSecret: ""
 
-# Additional JVM options appended to JAVA_OPTS.
+# JVM options for Core. When set, this REPLACES the image's JAVA_OPTS default
+# (-Xmx1024m -XX:MaxMetaspaceSize=512m), so include every heap flag you need.
 javaOpts: ""
 
 # Optional Prometheus JMX exporter agent loaded inside the OpenNMS JVM.

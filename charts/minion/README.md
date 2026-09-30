@@ -1,6 +1,6 @@
 # minion
 
-![Version: 0.4.0](https://img.shields.io/badge/Version-0.4.0-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: 36.0.2](https://img.shields.io/badge/AppVersion-36.0.2-informational?style=flat-square)
+![Version: 0.4.0](https://img.shields.io/badge/Version-0.4.0-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: 36.0.4](https://img.shields.io/badge/AppVersion-36.0.4-informational?style=flat-square)
 
 A Helm chart for Kubernetes
 
@@ -20,6 +20,9 @@ A Helm chart for Kubernetes
 | configRenderer.image.tag | string | `"3.19"` |  |
 | extraConfigFiles | object | `{}` |  |
 | fullnameOverride | string | `""` |  |
+| heapFromCgroup.enabled | bool | `false` |  |
+| heapFromCgroup.maxPercent | int | `70` |  |
+| heapFromCgroup.minPercent | int | `25` |  |
 | icmp.enabled | bool | `true` |  |
 | image.pullPolicy | string | `"IfNotPresent"` |  |
 | image.repository | string | `"docker.io/opennms/minion"` |  |
@@ -59,6 +62,7 @@ A Helm chart for Kubernetes
 | readinessProbe.tcpSocket.port | string | `"karaf"` |  |
 | readinessProbe.timeoutSeconds | int | `3` |  |
 | replicaCount | int | `1` |  |
+| resizePolicy | list | `[]` |  |
 | resources | object | `{}` |  |
 | securityContext | object | `{}` |  |
 | service.karaf.port | int | `8201` |  |
