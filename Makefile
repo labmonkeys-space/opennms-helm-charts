@@ -254,7 +254,7 @@ dev-clean: dev-uninstall-all kind-delete
 	@echo "$(OK) kind cluster destroyed"
 
 .PHONY: readme
-readme: deps-docs
+readme: deps-docs build
 	@echo -n "📝 Generating README.md       ... "
 	@helm-docs --log-level warning --chart-search-root charts/ 2>&1>$(README_LOG) || { cat $(README_LOG); exit 1; }
 	@echo "$(OK)"
