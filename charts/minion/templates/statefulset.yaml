@@ -54,10 +54,21 @@ spec:
         - name: {{ .Chart.Name }}
           image: {{ include "minion.image" . | quote }}
           imagePullPolicy: {{ .Values.image.pullPolicy | quote }}
+          {{- if .Values.heapFromCgroup.enabled }}
+          command:
+            - /bin/bash
+            - /opt/heap-from-cgroup/heap-from-cgroup.sh
+          {{- end }}
           args:
             - {{ include "minion.startupArg" . }}
           env:
             {{- include "minion.runtimeEnv" . | nindent 12 }}
+            {{- if .Values.heapFromCgroup.enabled }}
+            - name: HEAP_MAX_PERCENT
+              value: {{ .Values.heapFromCgroup.maxPercent | quote }}
+            - name: HEAP_MIN_PERCENT
+              value: {{ .Values.heapFromCgroup.minPercent | quote }}
+            {{- end }}
           ports:
             - name: karaf
               containerPort: 8201
@@ -95,6 +106,11 @@ spec:
               mountPath: /opt/minion-etc-overlay
             - name: minion-data
               mountPath: /opt/minion/data
+            {{- if .Values.heapFromCgroup.enabled }}
+            - name: heap-wrapper
+              mountPath: /opt/heap-from-cgroup
+              readOnly: true
+            {{- end }}
             {{- with .Values.volumeMounts }}
             {{- toYaml . | nindent 12 }}
             {{- end }}
@@ -110,6 +126,11 @@ spec:
         {{- if not .Values.persistence.enabled }}
         - name: minion-data
           emptyDir: {}
+        {{- end }}
+        {{- if .Values.heapFromCgroup.enabled }}
+        - name: heap-wrapper
+          configMap:
+            name: {{ include "minion.fullname" . }}-heap-wrapper
         {{- end }}
         {{- with .Values.volumes }}
         {{- toYaml . | nindent 8 }}

@@ -1,0 +1,58 @@
+# Copyright 2026 Ronny Trommer <ronny@no42.org>
+# SPDX-License-Identifier: Apache-2.0
+suite: minion heap wrapper
+templates:
+  - templates/statefulset.yaml
+  - templates/minion-heap-wrapper.yaml
+set:
+  location: test
+tests:
+  - it: leaves the image entrypoint alone by default
+    template: templates/statefulset.yaml
+    asserts:
+      - notExists:
+          path: spec.template.spec.containers[0].command
+  - it: renders no ConfigMap by default
+    template: templates/minion-heap-wrapper.yaml
+    asserts:
+      - hasDocuments: {count: 0}
+  - it: wraps the entrypoint and passes the percentages when enabled
+    template: templates/statefulset.yaml
+    set:
+      heapFromCgroup: {enabled: true, maxPercent: 60, minPercent: 20}
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].command
+          value: [/bin/bash, /opt/heap-from-cgroup/heap-from-cgroup.sh]
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: HEAP_MAX_PERCENT, value: "60"}
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: HEAP_MIN_PERCENT, value: "20"}
+      - contains:
+          path: spec.template.spec.containers[0].volumeMounts
+          content: {name: heap-wrapper, mountPath: /opt/heap-from-cgroup, readOnly: true}
+  - it: ships the script in a ConfigMap when enabled
+    template: templates/minion-heap-wrapper.yaml
+    set:
+      heapFromCgroup: {enabled: true, maxPercent: 70, minPercent: 25}
+    asserts:
+      - isKind: {of: ConfigMap}
+      - matchRegex:
+          path: data["heap-from-cgroup.sh"]
+          pattern: 'exec "\$\{ENTRYPOINT:-/entrypoint.sh\}"'
+  - it: rejects a max percentage above 100
+    template: templates/minion-heap-wrapper.yaml
+    set:
+      heapFromCgroup: {enabled: true, maxPercent: 120, minPercent: 25}
+    asserts:
+      - failedTemplate:
+          errorPattern: 'heapFromCgroup: need 1 <= minPercent <= maxPercent <= 100'
+  - it: rejects a min percentage above the max
+    template: templates/minion-heap-wrapper.yaml
+    set:
+      heapFromCgroup: {enabled: true, maxPercent: 50, minPercent: 60}
+    asserts:
+      - failedTemplate:
+          errorPattern: 'heapFromCgroup: need 1 <= minPercent <= maxPercent <= 100'
