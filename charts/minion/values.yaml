@@ -59,6 +59,13 @@ service:
 
 resources: {}
 
+# Container resize policy for in-place pod resize (Kubernetes 1.33+).
+# A JVM reads its memory limit only at startup, so pair a memory change with
+# a container restart and let CPU change live:
+#   - {resourceName: cpu, restartPolicy: NotRequired}
+#   - {resourceName: memory, restartPolicy: RestartContainer}
+resizePolicy: []
+
 # The chart overrides the upstream image's sshHost=127.0.0.1 with 0.0.0.0
 # (see charts/minion/templates/minion-config-templates.yaml), so Karaf SSH
 # binds the pod IP and a tcpSocket probe through the pod's network works.
@@ -110,6 +117,21 @@ location: ""
 
 # Additional JVM options appended to JAVA_OPTS.
 javaOpts: ""
+
+# Derive -Xms/-Xmx from the container memory limit at every container start.
+# The image entrypoint always appends -Xmx${JAVA_MAX_MEM:-2g}, which overrides
+# -XX:MaxRAMPercentage, so a heap percentage cannot be set through javaOpts.
+# Enable this when the memory limit changes at runtime, for example under a
+# VerticalPodAutoscaler with resizePolicy memory: RestartContainer.
+# When enabled, the derived values replace any JAVA_MIN_MEM/JAVA_MAX_MEM.
+heapFromCgroup:
+  enabled: false
+  # Heap ceiling as a percentage of the memory limit. The rest is left for
+  # metaspace, code cache, thread stacks and direct buffers.
+  maxPercent: 70
+  # Initial heap as a percentage of the memory limit. Kept low so resident
+  # memory tracks the live set and a VPA sees real demand.
+  minPercent: 25
 
 # Optional Prometheus JMX exporter agent loaded inside the Minion JVM.
 prometheus:

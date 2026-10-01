@@ -84,6 +84,12 @@ lint: deps build
 	@ct lint --debug --chart-dirs charts --validate-maintainers=true --check-version-increment=false 2>&1>$(LINT_LOG) || { cat $(LINT_LOG); exit 1; }
 	@echo "$(OK)"
 
+.PHONY: unittest
+unittest:
+	@helm plugin list | grep -q '^unittest' || { echo "Install helm-unittest: helm plugin install https://github.com/helm-unittest/helm-unittest"; exit 1; }
+	helm unittest charts/core charts/minion
+	@for t in charts/*/tests/*_test.sh; do [ -e "$$t" ] || continue; shellcheck "$$t" && bash "$$t"; done
+
 .PHONY: kind-create
 kind-create: deps
 	@if kind get clusters | grep -q helm-lint; then \

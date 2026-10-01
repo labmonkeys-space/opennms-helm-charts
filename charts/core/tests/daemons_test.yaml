@@ -1,0 +1,59 @@
+# Copyright 2026 Ronny Trommer <ronny@no42.org>
+# SPDX-License-Identifier: Apache-2.0
+suite: core daemon toggles
+templates:
+  - templates/statefulset.yaml
+set:
+  postgresql.host: pg.example
+tests:
+  - it: projects CORE_SERVICE_<NAME>_ENABLED=false for every disabled daemon
+    set:
+      daemons:
+        ackd: {enabled: false}
+        actiond: {enabled: false}
+        bsmd: {enabled: false}
+        collectd: {enabled: false}
+        discovery: {enabled: false}
+        enhancedlinkd: {enabled: false}
+        eventtranslator: {enabled: false}
+        notifd: {enabled: false}
+        passivestatusd: {enabled: false}
+        perspectivepoller: {enabled: false}
+        pollerd: {enabled: false}
+        queued: {enabled: false}
+        rtcd: {enabled: false}
+        scriptd: {enabled: false}
+        statsd: {enabled: false}
+        telemetryd: {enabled: false}
+        ticketer: {enabled: false}
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: CORE_SERVICE_POLLERD_ENABLED, value: "false"}
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: CORE_SERVICE_STATSD_ENABLED, value: "false"}
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: CORE_SERVICE_ACTIOND_ENABLED, value: "false"}
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: CORE_SERVICE_TELEMETRYD_ENABLED, value: "false"}
+      - contains:
+          path: spec.template.spec.initContainers[?(@.name == "core-init")].env
+          content: {name: CORE_SERVICE_COLLECTD_ENABLED, value: "false"}
+  - it: emits nothing for a daemon left enabled
+    set:
+      daemons:
+        pollerd: {enabled: true}
+    asserts:
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          content: {name: CORE_SERVICE_POLLERD_ENABLED, value: "false"}
+  - it: still rejects unknown daemon names
+    set:
+      daemons:
+        nosuchd: {enabled: false}
+    asserts:
+      - failedTemplate:
+          errorPattern: 'unknown daemon "nosuchd"'

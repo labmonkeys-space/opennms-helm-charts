@@ -164,6 +164,13 @@ persistence:
 
 resources: {}
 
+# Container resize policy for in-place pod resize (Kubernetes 1.33+).
+# A JVM reads its memory limit only at startup, so pair a memory change with
+# a container restart and let CPU change live:
+#   - {resourceName: cpu, restartPolicy: NotRequired}
+#   - {resourceName: memory, restartPolicy: RestartContainer}
+resizePolicy: []
+
 # Liveness uses tcpSocket on the webui port — fails if the JVM is dead OR has
 # dropped its WebUI listener. Readiness uses login.jsp until /opennms/rest/health
 # can be wired with credentials in a future chart version.
@@ -252,7 +259,8 @@ prometheusRemoteWriter:
   auth:
     existingSecret: ""
 
-# Additional JVM options appended to JAVA_OPTS.
+# JVM options for Core. When set, this REPLACES the image's JAVA_OPTS default
+# (-Xmx1024m -XX:MaxMetaspaceSize=512m), so include every heap flag you need.
 javaOpts: ""
 
 # Optional Prometheus JMX exporter agent loaded inside the OpenNMS JVM.
@@ -366,8 +374,10 @@ elasticsearch:
 #
 # Unknown short names fail `helm template` with a clear error listing the
 # whitelist. Adding the next daemon: append one entry to
-# `core.daemonsEnvWhitelist` in _helpers.tpl AND one entry below. The current
-# whitelist holds only `ackd`; expand as operators ask for it.
+# `core.daemonsEnvWhitelist` in _helpers.tpl AND one entry below.
+#
+# The whitelist covers every daemon that 36.0.4 enables by default and that a
+# trap-to-alarm deployment can run without.
 #
 # `ackd` defaults to `false`: the Acknowledgement Daemon is on the upstream
 # deprecation track and is not used by most deployments. Operators who rely on

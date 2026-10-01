@@ -18,7 +18,7 @@ version: 0.4.0
 
 # Lock-step with the bundled OpenNMS components (Core and Sentinel both run
 # this version of Horizon).
-appVersion: "36.0.2"
+appVersion: "36.0.4"
 
 # Strict-pin subchart versions. The matched-pair invariant — Core and Sentinel
 # must run the same OpenNMS major version due to shared JPA schema and Karaf

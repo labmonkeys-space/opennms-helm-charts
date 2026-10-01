@@ -1,0 +1,19 @@
+# Copyright 2026 Ronny Trommer <ronny@no42.org>
+# SPDX-License-Identifier: Apache-2.0
+suite: core JAVA_OPTS
+templates:
+  - templates/core-configmap.yaml
+set:
+  postgresql.host: pg.example
+tests:
+  - it: does not set JAVA_OPTS when javaOpts is empty, so the image default -Xmx1024m applies
+    asserts:
+      - notExists:
+          path: data.JAVA_OPTS
+  - it: sets JAVA_OPTS to exactly javaOpts, replacing the image default
+    set:
+      javaOpts: "-XX:+UseG1GC -XX:MaxRAMPercentage=60"
+    asserts:
+      - equal:
+          path: data.JAVA_OPTS
+          value: "-XX:+UseG1GC -XX:MaxRAMPercentage=60"

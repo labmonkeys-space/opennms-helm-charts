@@ -1,6 +1,6 @@
 # opennms-stack
 
-![Version: 0.4.0](https://img.shields.io/badge/Version-0.4.0-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: 36.0.2](https://img.shields.io/badge/AppVersion-36.0.2-informational?style=flat-square)
+![Version: 0.4.0](https://img.shields.io/badge/Version-0.4.0-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: 36.0.4](https://img.shields.io/badge/AppVersion-36.0.4-informational?style=flat-square)
 
 Umbrella Helm chart bundling OpenNMS Horizon Core and Sentinel for the
 central OpenNMS site. Connects to BYO Postgres, Kafka, and Elasticsearch.
