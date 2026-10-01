@@ -123,7 +123,7 @@ A Helm chart for Kubernetes
 | webAdmin.existingSecretPasswordKey | string | `"password"` |  |
 | webAdmin.image.pullPolicy | string | `"IfNotPresent"` |  |
 | webAdmin.image.repository | string | `"ghcr.io/no42-org/onmsctl"` |  |
-| webAdmin.image.tag | string | `"0.4.2"` |  |
+| webAdmin.image.tag | string | `"0.4.10"` |  |
 | webAdmin.passwordLength | int | `24` |  |
 | webAdmin.readiness.intervalSeconds | int | `10` |  |
 | webAdmin.readiness.retries | int | `60` |  |

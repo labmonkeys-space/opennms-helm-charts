@@ -16,7 +16,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.0
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
         with:
           fetch-depth: 0
 
@@ -45,20 +45,25 @@ jobs:
   # `fatal: You are not currently on a branch`. The docs commit happens on
   # the prior `main` push that produced the tagged commit; the tagged commit
   # itself doesn't need regeneration.
+  #
+  # On pull_request the checkout is the detached merge ref, so a push is
+  # impossible there too. PRs run in fail-on-diff mode instead: the job
+  # prints the README diff and fails. Run `make readme` and commit it.
   helm-docs:
     if: github.ref_type != 'tag'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.0
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
         with:
           fetch-depth: 0
 
       - name: Run Helm Docs
-        uses: losisin/helm-docs-github-action@3a4528e97c49a5e83de6b78c50c61c8ee5c9f944  # v2.0.0
+        uses: losisin/helm-docs-github-action@9e0787c426fdec38be6288bb5c0559dcb388412c  # v2.0.1
         with:
           chart-search-root: ./charts
-          git-push: true
+          git-push: ${{ github.event_name != 'pull_request' }}
+          fail-on-diff: ${{ github.event_name == 'pull_request' }}
           git-push-user-name: "GitHub Action"
           git-push-user-email: "twiki@labmonkeys.space"
           git-commit-message: "docs: Update Helm Readme files"
@@ -79,7 +84,7 @@ jobs:
     name: test-install-${{ matrix.chart }}
     steps:
       - name: Checkout
-        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.0
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
         with:
           fetch-depth: 0
 
