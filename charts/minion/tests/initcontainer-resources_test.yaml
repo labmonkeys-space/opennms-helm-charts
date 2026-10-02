@@ -1,0 +1,26 @@
+# Copyright 2026 Ronny Trommer <ronny@no42.org>
+# SPDX-License-Identifier: Apache-2.0
+suite: minion initContainers.resources
+templates:
+  - templates/statefulset.yaml
+set:
+  location: test
+tests:
+  - it: renders no resources on render-config by default
+    asserts:
+      - equal:
+          path: spec.template.spec.initContainers[0].name
+          value: render-config
+      - notExists:
+          path: spec.template.spec.initContainers[0].resources
+  - it: renders the configured resources on render-config
+    set:
+      initContainers.resources:
+        requests: {cpu: 100m, memory: 64Mi}
+        limits: {cpu: 100m, memory: 64Mi}
+    asserts:
+      - equal:
+          path: spec.template.spec.initContainers[0].resources
+          value:
+            requests: {cpu: 100m, memory: 64Mi}
+            limits: {cpu: 100m, memory: 64Mi}

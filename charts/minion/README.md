@@ -28,6 +28,7 @@ A Helm chart for Kubernetes
 | image.repository | string | `"docker.io/opennms/minion"` |  |
 | image.tag | string | `""` |  |
 | imagePullSecrets | list | `[]` |  |
+| initContainers.resources | object | `{}` |  |
 | instanceId | string | `"OpenNMS"` |  |
 | javaOpts | string | `""` |  |
 | kafka.auth.enabled | bool | `false` |  |

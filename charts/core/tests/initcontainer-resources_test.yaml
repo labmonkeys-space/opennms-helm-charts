@@ -1,0 +1,49 @@
+# Copyright 2026 Ronny Trommer <ronny@no42.org>
+# SPDX-License-Identifier: Apache-2.0
+suite: core initContainers.resources
+templates:
+  - templates/statefulset.yaml
+set:
+  postgresql.host: pg.example
+tests:
+  - it: renders no resources on init containers by default
+    asserts:
+      - equal:
+          path: spec.template.spec.initContainers[0].name
+          value: render-config
+      - notExists:
+          path: spec.template.spec.initContainers[0].resources
+      - equal:
+          path: spec.template.spec.initContainers[1].name
+          value: core-init
+      - notExists:
+          path: spec.template.spec.initContainers[1].resources
+  - it: renders the configured resources on every init container
+    set:
+      prometheusRemoteWriter.enabled: true
+      prometheusRemoteWriter.writeUrl: http://prom.example/api/v1/write
+      prometheusRemoteWriter.readUrl: http://prom.example/api/v1/read
+      initContainers.resources:
+        requests: {cpu: 500m, memory: 512Mi}
+        limits: {cpu: 500m, memory: 512Mi}
+    asserts:
+      - equal:
+          path: spec.template.spec.initContainers[0].name
+          value: download-plugins
+      - equal:
+          path: spec.template.spec.initContainers[0].resources
+          value: &res
+            requests: {cpu: 500m, memory: 512Mi}
+            limits: {cpu: 500m, memory: 512Mi}
+      - equal:
+          path: spec.template.spec.initContainers[1].name
+          value: render-config
+      - equal:
+          path: spec.template.spec.initContainers[1].resources
+          value: *res
+      - equal:
+          path: spec.template.spec.initContainers[2].name
+          value: core-init
+      - equal:
+          path: spec.template.spec.initContainers[2].resources
+          value: *res

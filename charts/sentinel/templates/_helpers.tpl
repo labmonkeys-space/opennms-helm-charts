@@ -199,6 +199,10 @@ This helper is duplicated in core/ and minion/ — keep them in sync.
   env:
 {{ $envContent | indent 4 }}
   {{- end }}
+  {{- with .Values.initContainers.resources }}
+  resources:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
   volumeMounts:
     - name: config-templates
       mountPath: /tmp/templates

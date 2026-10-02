@@ -51,6 +51,7 @@ A Helm chart for Kubernetes
 | ingress.hosts[0].paths[0].path | string | `"/"` |  |
 | ingress.hosts[0].paths[0].pathType | string | `"ImplementationSpecific"` |  |
 | ingress.tls | list | `[]` |  |
+| initContainers.resources | object | `{}` |  |
 | instanceId | string | `"OpenNMS"` |  |
 | javaOpts | string | `""` |  |
 | kafka.auth.enabled | bool | `false` |  |

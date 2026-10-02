@@ -126,6 +126,10 @@ envsubst initContainer — same shape as core/sentinel. Decodes "__" to "/".
     {{- if $envExtra }}
 {{ $envExtra | indent 4 }}
     {{- end }}
+  {{- with .Values.initContainers.resources }}
+  resources:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
   volumeMounts:
     - name: config-templates
       mountPath: /tmp/templates
