@@ -6,11 +6,35 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). All
 
 ## [Unreleased]
 
+(no unreleased changes yet)
+
+## [0.5.0] — 2026-10-03
+
 ### Added
 
+- **`core`**: every daemon that defaults to enabled in Horizon 36.0.4 can now be turned off with `daemons.<name>.enabled: false`. The new names are `actiond`, `bsmd`, `collectd`, `discovery`, `enhancedlinkd`, `eventtranslator`, `notifd`, `passivestatusd`, `perspectivepoller`, `pollerd`, `queued`, `rtcd`, `scriptd`, `statsd`, `telemetryd` and `ticketer`. Defaults are unchanged. ([#30](https://github.com/labmonkeys-space/opennms-helm-charts/pull/30), closes [#31](https://github.com/labmonkeys-space/opennms-helm-charts/issues/31))
+- **`core`, `minion`**: new `resizePolicy` value (default `[]`) on the main container for in-place pod resize (Kubernetes 1.33+). A VerticalPodAutoscaler can then resize CPU live and restart the container for memory. ([#30](https://github.com/labmonkeys-space/opennms-helm-charts/pull/30), closes [#32](https://github.com/labmonkeys-space/opennms-helm-charts/issues/32))
+- **`minion`**: new `heapFromCgroup` block (default `enabled: false`). When enabled, a wrapper reads the cgroup memory limit at every container start and sets `JAVA_MAX_MEM` and `JAVA_MIN_MEM` to `maxPercent` (default 70) and `minPercent` (default 25) of it. The derived values replace any operator-set `JAVA_MIN_MEM`/`JAVA_MAX_MEM`. ([#30](https://github.com/labmonkeys-space/opennms-helm-charts/pull/30), closes [#33](https://github.com/labmonkeys-space/opennms-helm-charts/issues/33))
 - **`core`, `minion`, `sentinel`**: new `initContainers.resources` value (default `{}`), applied to every init container in the chart's pod. In `core` that is `download-plugins` (when `prometheusRemoteWriter.enabled`), `render-config` and `core-init`; in `minion` and `sentinel` it is `render-config`. Set CPU and memory requests equal to limits here and in `resources` to get the Guaranteed QoS class. Empty renders nothing, so existing deployments are unchanged. ([#34](https://github.com/labmonkeys-space/opennms-helm-charts/issues/34))
 - **`core`**: new `coreInit.skipWhenCurrent` value (default `false`). When enabled, `core-init` skips the OpenNMS installer if `/opennms-data/.core-init-done` records a successful run for the same image and database (host, port, name). This saves about 15 s per restart. A new image tag runs the installer again. Use immutable tags, and delete the marker if the database is recreated under the same name.
-- **`core`**: new `startupProbe` value (default `{}`), rendered on the Core container. Kubernetes holds liveness and readiness until it succeeds, so it can gate readiness on full OpenNMS startup. Empty renders nothing, so existing deployments are unchanged.
+- **`core`**: new `startupProbe` value (default `{}`), rendered on the Core container. Kubernetes holds liveness and readiness until it succeeds, so it can gate readiness on full OpenNMS startup. Empty renders nothing, so existing deployments are unchanged. ([#40](https://github.com/labmonkeys-space/opennms-helm-charts/pull/40), closes [#39](https://github.com/labmonkeys-space/opennms-helm-charts/issues/39))
+
+### Changed
+
+- **All four charts**: `appVersion` bumped `36.0.2` → **`36.0.4`** (upstream OpenNMS Horizon), lock-step. The default `opennms/horizon` image tag follows `appVersion`, so pods pull `36.0.4` on the next roll. ([#30](https://github.com/labmonkeys-space/opennms-helm-charts/pull/30))
+- **`core`, `minion`**: README notes that `javaOpts` replaces the image's `JAVA_OPTS` instead of appending to it. ([#30](https://github.com/labmonkeys-space/opennms-helm-charts/pull/30))
+- **`core`**: `webAdmin.image` (onmsctl) bumped `0.4.2` → `0.4.10`. ([#28](https://github.com/labmonkeys-space/opennms-helm-charts/pull/28))
+- **All four charts**: chart `version` bumped `0.4.0` → **`0.5.0`** (minor: new opt-in features). Umbrella `dependencies` strict-pinned to `=0.5.0`.
+
+### Fixed
+
+- **`minion`**: a fractional `heapFromCgroup.maxPercent` or `minPercent` (for example `70.5`) passed validation but broke the wrapper's integer arithmetic, so the Minion started with the image default heap. The StatefulSet now passes the same integer value that validation checks. ([#36](https://github.com/labmonkeys-space/opennms-helm-charts/pull/36))
+- **`core`, `minion`, `sentinel`**: the `.helmignore` entry that keeps helm-unittest files out of the package also matched `templates/tests/`, so the `helm test` hooks were missing from rendered and packaged charts. This regression came in after 0.4.0 and never shipped. ([#42](https://github.com/labmonkeys-space/opennms-helm-charts/pull/42), closes [#41](https://github.com/labmonkeys-space/opennms-helm-charts/issues/41))
+
+### Upgrade impact (0.4.0 → 0.5.0)
+
+- **Horizon 36.0.4.** The default image tag moves with `appVersion`. Review the upstream 36.0.3/36.0.4 release notes before upgrading production.
+- Every new value defaults off or empty. With unchanged values, 0.5.0 renders the same manifests as 0.4.0 apart from the image tag and chart labels.
 
 ## [0.4.0] — 2026-07-09
 
