@@ -33,6 +33,14 @@ tests:
       - contains:
           path: spec.template.spec.containers[0].volumeMounts
           content: {name: heap-wrapper, mountPath: /opt/heap-from-cgroup, readOnly: true}
+  - it: passes the validated integer when a percentage is fractional
+    template: templates/statefulset.yaml
+    set:
+      heapFromCgroup: {enabled: true, maxPercent: 70.5, minPercent: 25}
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: HEAP_MAX_PERCENT, value: "70"}
   - it: ships the script in a ConfigMap when enabled
     template: templates/minion-heap-wrapper.yaml
     set:

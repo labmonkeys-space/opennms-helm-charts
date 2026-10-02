@@ -88,7 +88,7 @@ lint: deps build
 unittest:
 	@helm plugin list | grep -q '^unittest' || { echo "Install helm-unittest: helm plugin install https://github.com/helm-unittest/helm-unittest"; exit 1; }
 	helm unittest charts/core charts/minion charts/sentinel
-	@for t in charts/*/tests/*_test.sh; do [ -e "$$t" ] || continue; shellcheck "$$t" && bash "$$t"; done
+	@for t in charts/*/tests/*_test.sh; do [ -e "$$t" ] || continue; shellcheck "$$t" && bash "$$t" || exit 1; done
 
 .PHONY: kind-create
 kind-create: deps
