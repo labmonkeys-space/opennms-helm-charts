@@ -6,7 +6,9 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). All
 
 ## [Unreleased]
 
-(no unreleased changes yet)
+### Added
+
+- **repo**: the release workflow signs every chart it pushes to GHCR with cosign keyless and records SLSA build provenance for the OCI digest and the `.tgz`. `RELEASING.md` shows the `cosign verify` and `gh attestation verify` commands. 0.5.0 and earlier are unsigned. ([#43](https://github.com/labmonkeys-space/opennms-helm-charts/issues/43))
 
 ## [0.5.0] — 2026-10-03
 

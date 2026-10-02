@@ -17,9 +17,10 @@ jobs:
   release:
     runs-on: ubuntu-latest
     permissions:
-      contents: write    # chart-releaser-action: create Releases, push gh-pages
-      packages: write    # helm push: GHCR OCI artifacts
-      id-token: write    # reserved for future cosign keyless signing
+      contents: write      # chart-releaser-action: create Releases, push gh-pages
+      packages: write      # helm push + cosign signatures: GHCR OCI artifacts
+      id-token: write      # cosign keyless signing and provenance (GitHub OIDC)
+      attestations: write  # actions/attest-build-provenance
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
@@ -71,12 +72,41 @@ jobs:
       - name: Login to GHCR
         run: echo "${{ secrets.GITHUB_TOKEN }}" | helm registry login ghcr.io -u "${{ github.actor }}" --password-stdin
 
-      - name: Push packaged charts to GHCR
+      - name: Install cosign
+        uses: sigstore/cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6  # v4.1.2
+
+      # Push each chart, sign it by digest with cosign keyless, and record the
+      # OCI digest and the .tgz digest as provenance subjects. Pages and
+      # GitHub Release consumers verify the .tgz, OCI consumers the digest.
+      - name: Push and sign packaged charts on GHCR
+        id: push
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ACTOR: ${{ github.actor }}
         run: |
-          set -eu
+          set -euo pipefail
           shopt -s nullglob
+          repo="ghcr.io/${{ github.repository_owner }}/charts"
+          # cosign reads the Docker credential store, not helm's registry login.
+          cosign login ghcr.io -u "$ACTOR" --password-stdin <<<"$GH_TOKEN"
+          : > provenance-subjects.txt
           for tgz in .cr-release-packages/*.tgz; do
-            echo "Pushing $tgz → oci://ghcr.io/${{ github.repository_owner }}/charts"
-            helm push "$tgz" "oci://ghcr.io/${{ github.repository_owner }}/charts"
+            echo "Pushing $tgz → oci://$repo"
+            out=$(helm push "$tgz" "oci://$repo" 2>&1)
+            echo "$out"
+            digest=$(sed -n 's/^Digest: //p' <<<"$out")
+            [[ "$digest" == sha256:* ]] || { echo "no digest in helm push output for $tgz" >&2; exit 1; }
+            chart=$(helm show chart "$tgz" | sed -n 's/^name: //p')
+            cosign sign --yes "$repo/$chart@$digest"
+            echo "${digest#sha256:}  $repo/$chart" >> provenance-subjects.txt
+            sha256sum "$tgz" | sed "s|  .*/|  |" >> provenance-subjects.txt
           done
+          cat provenance-subjects.txt
+          if [[ -s provenance-subjects.txt ]]; then echo "attest=true" >> "$GITHUB_OUTPUT"; fi
         shell: bash
+
+      - name: Attest build provenance
+        if: steps.push.outputs.attest == 'true'
+        uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8  # v4.2.2
+        with:
+          subject-checksums: provenance-subjects.txt
