@@ -21,6 +21,7 @@ A Helm chart for Kubernetes
 | configRenderer.image.pullPolicy | string | `"IfNotPresent"` |  |
 | configRenderer.image.repository | string | `"docker.io/alpine"` |  |
 | configRenderer.image.tag | string | `"3.24"` |  |
+| coreInit.skipWhenCurrent | bool | `false` |  |
 | daemons.ackd.enabled | bool | `false` |  |
 | elasticsearch.auth.existingSecret | string | `""` |  |
 | elasticsearch.connTimeout | int | `30000` |  |
