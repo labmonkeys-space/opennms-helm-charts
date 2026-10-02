@@ -117,6 +117,8 @@ The workflow runs to completion in ~2-3 minutes (no kind cluster, just
   `sentinel-0.1.0`, `minion-0.1.0`, `opennms-stack-0.1.0`).
 - Updated `gh-pages/index.yaml` to include the new entries.
 - Pushed each new `.tgz` to GHCR as an OCI artifact.
+- Signed each pushed chart by digest with cosign keyless (GitHub OIDC).
+- Recorded SLSA build provenance for each pushed chart, by OCI digest and by `.tgz` digest.
 
 ---
 
@@ -147,6 +149,28 @@ helm pull oci://ghcr.io/labmonkeys-space/charts/opennms-stack --version 0.1.0
 
 Both should succeed without auth (GHCR packages are public after the
 first-time bootstrap below).
+
+### Signatures and provenance
+
+Charts released after 0.5.0 are signed with cosign keyless and carry SLSA build provenance.
+0.5.0 and earlier are unsigned.
+
+Verify the cosign signature of an OCI chart:
+
+```bash
+cosign verify ghcr.io/labmonkeys-space/charts/core:0.6.0 \
+  --certificate-identity-regexp '^https://github\.com/labmonkeys-space/opennms-helm-charts/\.github/workflows/release\.yaml@refs/tags/v' \
+  --certificate-oidc-issuer https://token.actions.githubusercontent.com
+```
+
+Verify the build provenance of an OCI chart, or of a `.tgz` pulled from the Helm repository or a GitHub Release:
+
+```bash
+gh attestation verify oci://ghcr.io/labmonkeys-space/charts/core:0.6.0 --repo labmonkeys-space/opennms-helm-charts
+gh attestation verify core-0.6.0.tgz --repo labmonkeys-space/opennms-helm-charts
+```
+
+All commands exit 0 for a chart built by this repository's release workflow.
 
 ---
 
@@ -194,9 +218,10 @@ the job level:
 
 ```yaml
 permissions:
-  contents: write    # GitHub Releases + gh-pages push
-  packages: write    # GHCR OCI push
-  id-token: write    # reserved for future cosign keyless signing
+  contents: write      # GitHub Releases + gh-pages push
+  packages: write      # GHCR OCI push + cosign signatures
+  id-token: write      # cosign keyless signing and provenance (GitHub OIDC)
+  attestations: write  # build provenance attestations
 ```
 
 These job-level grants override any repo defaults that are too narrow,
