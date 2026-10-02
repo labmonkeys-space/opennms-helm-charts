@@ -59,6 +59,11 @@ service:
 
 resources: {}
 
+# Resources for the render-config init container. Set CPU and memory requests
+# equal to limits here and in `resources` for Guaranteed QoS.
+initContainers:
+  resources: {}
+
 # Container resize policy for in-place pod resize (Kubernetes 1.33+).
 # A JVM reads its memory limit only at startup, so pair a memory change with
 # a container restart and let CPU change live:

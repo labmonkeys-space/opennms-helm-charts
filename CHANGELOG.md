@@ -6,7 +6,9 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). All
 
 ## [Unreleased]
 
-(no unreleased changes yet)
+### Added
+
+- **`core`, `minion`, `sentinel`**: new `initContainers.resources` value (default `{}`), applied to every init container in the chart's pod. In `core` that is `download-plugins` (when `prometheusRemoteWriter.enabled`), `render-config` and `core-init`; in `minion` and `sentinel` it is `render-config`. Set CPU and memory requests equal to limits here and in `resources` to get the Guaranteed QoS class. Empty renders nothing, so existing deployments are unchanged. ([#34](https://github.com/labmonkeys-space/opennms-helm-charts/issues/34))
 
 ## [0.4.0] — 2026-07-09
 

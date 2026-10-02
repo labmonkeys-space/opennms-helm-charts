@@ -45,6 +45,11 @@ service:
 
 resources: {}
 
+# Resources for the render-config init container. Set CPU and memory requests
+# equal to limits here and in `resources` for Guaranteed QoS.
+initContainers:
+  resources: {}
+
 # Liveness and readiness probe the Karaf shell SSH port — comes up only after
 # the Karaf runtime has finished starting.
 livenessProbe:

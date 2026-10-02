@@ -65,6 +65,10 @@ spec:
           env:
             - name: KAR_URL
               value: {{ include "core.prometheusRemoteWriterKarUrl" . | quote }}
+          {{- with .Values.initContainers.resources }}
+          resources:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
           volumeMounts:
             - name: opennms-overlay
               mountPath: /opt/opennms-overlay
@@ -77,6 +81,10 @@ spec:
           imagePullPolicy: {{ .Values.image.pullPolicy | quote }}
           args:
             - -i
+          {{- with .Values.initContainers.resources }}
+          resources:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
           envFrom:
             - configMapRef:
                 name: {{ include "core.fullname" . }}-env
