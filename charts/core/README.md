@@ -21,6 +21,7 @@ A Helm chart for Kubernetes
 | configRenderer.image.pullPolicy | string | `"IfNotPresent"` |  |
 | configRenderer.image.repository | string | `"docker.io/alpine"` |  |
 | configRenderer.image.tag | string | `"3.24"` |  |
+| coreInit.skipWhenCurrent | bool | `false` |  |
 | daemons.ackd.enabled | bool | `false` |  |
 | elasticsearch.auth.existingSecret | string | `""` |  |
 | elasticsearch.connTimeout | int | `30000` |  |
@@ -114,6 +115,7 @@ A Helm chart for Kubernetes
 | serviceAccount.automount | bool | `true` |  |
 | serviceAccount.create | bool | `true` |  |
 | serviceAccount.name | string | `""` |  |
+| startupProbe | object | `{}` |  |
 | timeseriesStrategy | string | `"rrd"` |  |
 | timezone | string | `"UTC"` |  |
 | tolerations | list | `[]` |  |

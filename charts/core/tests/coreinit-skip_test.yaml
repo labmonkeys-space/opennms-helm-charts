@@ -1,0 +1,38 @@
+# Copyright 2026 Ronny Trommer <ronny@no42.org>
+# SPDX-License-Identifier: Apache-2.0
+suite: core coreInit.skipWhenCurrent
+templates:
+  - templates/statefulset.yaml
+set:
+  postgresql.host: pg.example
+tests:
+  - it: runs the installer on every start by default
+    asserts:
+      - equal:
+          path: spec.template.spec.initContainers[1].name
+          value: core-init
+      - notExists:
+          path: spec.template.spec.initContainers[1].command
+      - equal:
+          path: spec.template.spec.initContainers[1].args
+          value: [-i]
+  - it: skips the installer when the marker matches image and database
+    set:
+      coreInit.skipWhenCurrent: true
+      image.tag: 36.0.4
+    asserts:
+      - equal:
+          path: spec.template.spec.initContainers[1].command
+          value: [/bin/bash, -c]
+      - matchRegex:
+          path: spec.template.spec.initContainers[1].args[0]
+          pattern: 'marker=/opennms-data/\.core-init-done'
+      - matchRegex:
+          path: spec.template.spec.initContainers[1].args[0]
+          pattern: '/entrypoint\.sh -i\n'
+      - matchRegex:
+          path: spec.template.spec.initContainers[1].args[0]
+          pattern: 'echo "\$want" > "\$marker"'
+      - contains:
+          path: spec.template.spec.initContainers[1].env
+          content: {name: CORE_INIT_IMAGE, value: "docker.io/opennms/horizon:36.0.4"}

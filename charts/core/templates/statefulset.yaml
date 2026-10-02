@@ -75,12 +75,29 @@ spec:
         {{- end }}
         {{- /* envsubst init: render placeholder .cfg files into etc-overlay emptyDir */}}
         {{- include "core.envsubstInitContainer" . | nindent 8 }}
-        {{- /* OpenNMS install / upgrade phase (idempotent — checks etc/configured) */}}
+        {{- /* OpenNMS install / upgrade phase. etc/configured never survives in this
+               container, so it runs every start unless coreInit.skipWhenCurrent. */}}
         - name: {{ .Chart.Name }}-init
           image: {{ include "core.image" . | quote }}
           imagePullPolicy: {{ .Values.image.pullPolicy | quote }}
+          {{- if .Values.coreInit.skipWhenCurrent }}
+          {{- /* Skip the installer when it already succeeded for this image and database. */}}
+          command: [/bin/bash, -c]
+          args:
+            - |
+              set -euo pipefail
+              marker=/opennms-data/.core-init-done
+              want="${CORE_INIT_IMAGE} ${POSTGRES_HOST}:${POSTGRES_PORT}/${OPENNMS_DBNAME}"
+              if [[ -f "$marker" && "$(cat "$marker")" == "$want" ]]; then
+                echo "core-init: installer already ran for ${want}; skipping. Delete ${marker} to force it."
+                exit 0
+              fi
+              /entrypoint.sh -i
+              echo "$want" > "$marker"
+          {{- else }}
           args:
             - -i
+          {{- end }}
           {{- with .Values.initContainers.resources }}
           resources:
             {{- toYaml . | nindent 12 }}
@@ -91,6 +108,10 @@ spec:
           env:
             {{- include "core.postgresEnv" . | nindent 12 }}
             {{- include "core.daemonsDisableEnv" . | nindent 12 }}
+            {{- if .Values.coreInit.skipWhenCurrent }}
+            - name: CORE_INIT_IMAGE
+              value: {{ include "core.image" . | quote }}
+            {{- end }}
           volumeMounts:
             - name: confd-overlay
               mountPath: /opt/opennms/horizon-config.yaml
@@ -127,6 +148,10 @@ spec:
               containerPort: {{ .Values.prometheus.jmxExporter.port }}
               protocol: TCP
             {{- end }}
+          {{- with .Values.startupProbe }}
+          startupProbe:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
           {{- with .Values.livenessProbe }}
           livenessProbe:
             {{- toYaml . | nindent 12 }}

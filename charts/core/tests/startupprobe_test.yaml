@@ -1,0 +1,27 @@
+# Copyright 2026 Ronny Trommer <ronny@no42.org>
+# SPDX-License-Identifier: Apache-2.0
+suite: core startupProbe
+templates:
+  - templates/statefulset.yaml
+set:
+  postgresql.host: pg.example
+tests:
+  - it: renders no startup probe by default
+    asserts:
+      - notExists:
+          path: spec.template.spec.containers[0].startupProbe
+  - it: renders the configured startup probe
+    set:
+      startupProbe:
+        exec:
+          command: [/bin/sh, -c, "true"]
+        periodSeconds: 2
+        failureThreshold: 300
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].startupProbe
+          value:
+            exec:
+              command: [/bin/sh, -c, "true"]
+            periodSeconds: 2
+            failureThreshold: 300

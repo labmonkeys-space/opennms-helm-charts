@@ -9,6 +9,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). All
 ### Added
 
 - **`core`, `minion`, `sentinel`**: new `initContainers.resources` value (default `{}`), applied to every init container in the chart's pod. In `core` that is `download-plugins` (when `prometheusRemoteWriter.enabled`), `render-config` and `core-init`; in `minion` and `sentinel` it is `render-config`. Set CPU and memory requests equal to limits here and in `resources` to get the Guaranteed QoS class. Empty renders nothing, so existing deployments are unchanged. ([#34](https://github.com/labmonkeys-space/opennms-helm-charts/issues/34))
+- **`core`**: new `coreInit.skipWhenCurrent` value (default `false`). When enabled, `core-init` skips the OpenNMS installer if `/opennms-data/.core-init-done` records a successful run for the same image and database (host, port, name). This saves about 15 s per restart. A new image tag runs the installer again. Use immutable tags, and delete the marker if the database is recreated under the same name.
+- **`core`**: new `startupProbe` value (default `{}`), rendered on the Core container. Kubernetes holds liveness and readiness until it succeeds, so it can gate readiness on full OpenNMS startup. Empty renders nothing, so existing deployments are unchanged.
 
 ## [0.4.0] — 2026-07-09
 

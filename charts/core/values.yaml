@@ -170,6 +170,15 @@ resources: {}
 initContainers:
   resources: {}
 
+# core-init runs the OpenNMS installer (config tester and database schema
+# check) on every pod start, about 15 s. With skipWhenCurrent the installer is
+# skipped when /opennms-data/.core-init-done matches the image and the database
+# (host, port, name) of a previous successful run. A new image tag runs it again.
+# Use immutable image tags. If the database is recreated under the same name,
+# delete the marker file, or Core fails to start on the missing schema.
+coreInit:
+  skipWhenCurrent: false
+
 # Container resize policy for in-place pod resize (Kubernetes 1.33+).
 # A JVM reads its memory limit only at startup, so pair a memory change with
 # a container restart and let CPU change live:
@@ -196,6 +205,11 @@ readinessProbe:
   timeoutSeconds: 3
   failureThreshold: 20
   periodSeconds: 5
+
+# Optional startup probe. Kubernetes runs liveness and readiness only after it
+# succeeds, so it can gate readiness on full OpenNMS startup (for example an exec
+# probe on "Starter: Startup complete" in logs/manager.log). Empty renders nothing.
+startupProbe: {}
 
 # Core is a singleton service and is not horizontally scaled. The autoscaling
 # block is retained for compatibility but disabled.
