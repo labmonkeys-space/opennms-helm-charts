@@ -115,6 +115,7 @@ A Helm chart for Kubernetes
 | serviceAccount.automount | bool | `true` |  |
 | serviceAccount.create | bool | `true` |  |
 | serviceAccount.name | string | `""` |  |
+| startupProbe | object | `{}` |  |
 | timeseriesStrategy | string | `"rrd"` |  |
 | timezone | string | `"UTC"` |  |
 | tolerations | list | `[]` |  |

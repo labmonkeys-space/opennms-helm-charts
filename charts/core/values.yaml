@@ -206,6 +206,11 @@ readinessProbe:
   failureThreshold: 20
   periodSeconds: 5
 
+# Optional startup probe. Kubernetes runs liveness and readiness only after it
+# succeeds, so it can gate readiness on full OpenNMS startup (for example an exec
+# probe on "Starter: Startup complete" in logs/manager.log). Empty renders nothing.
+startupProbe: {}
+
 # Core is a singleton service and is not horizontally scaled. The autoscaling
 # block is retained for compatibility but disabled.
 autoscaling:
