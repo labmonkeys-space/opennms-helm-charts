@@ -29,6 +29,13 @@ jobs:
       - name: Run Chart-lint
         run: make lint
 
+      # Helm 4 cannot GPG-verify a plugin installed from git, hence --verify=false.
+      - name: Install helm-unittest plugin
+        run: helm plugin install https://github.com/helm-unittest/helm-unittest.git --version v1.2.0 --verify=false
+
+      - name: Run unit tests
+        run: make unittest
+
       # Pre-release drift check — fails fast on PR review when the umbrella's
       # strict-pin subchart deps drift out of sync with the working core/
       # and sentinel/ chart versions. Without this, the drift would only
