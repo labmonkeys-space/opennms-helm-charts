@@ -65,9 +65,9 @@ spec:
             {{- include "minion.runtimeEnv" . | nindent 12 }}
             {{- if .Values.heapFromCgroup.enabled }}
             - name: HEAP_MAX_PERCENT
-              value: {{ .Values.heapFromCgroup.maxPercent | quote }}
+              value: {{ int .Values.heapFromCgroup.maxPercent | quote }}
             - name: HEAP_MIN_PERCENT
-              value: {{ .Values.heapFromCgroup.minPercent | quote }}
+              value: {{ int .Values.heapFromCgroup.minPercent | quote }}
             {{- end }}
           ports:
             - name: karaf
