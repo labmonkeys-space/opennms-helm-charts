@@ -13,7 +13,7 @@ on:
 jobs:
   # Fast lint pass — gates the (slower) chart-install matrix.
   lint:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04  # was ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
@@ -58,7 +58,7 @@ jobs:
   # prints the README diff and fails. Run `make readme` and commit it.
   helm-docs:
     if: github.ref_type != 'tag'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04  # was ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
@@ -79,7 +79,7 @@ jobs:
   # single chart's failure doesn't cancel the others — full picture every run.
   test-install:
     needs: lint
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04  # was ubuntu-latest
     strategy:
       fail-fast: false
       matrix:

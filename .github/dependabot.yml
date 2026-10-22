@@ -8,10 +8,14 @@
 version: 2
 
 updates:
-  # GitHub Actions used in workflows under .github/workflows/ AND in any
-  # composite actions referenced from there (.github/actions/**/action.yaml).
+  # GitHub Actions used in workflows under .github/workflows/ ("/") and in
+  # the composite actions under .github/actions/. "/" alone does not scan
+  # composite actions: setup_helmlint stayed on azure/setup-helm 4.3.1 while
+  # release.yaml was bumped to 5.0.1.
   - package-ecosystem: "github-actions"
-    directory: "/"
+    directories:
+      - "/"
+      - "/.github/actions/*"
     schedule:
       interval: "weekly"
       day: "monday"
