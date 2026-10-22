@@ -6,9 +6,12 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). All
 
 ## [Unreleased]
 
+## [0.5.2] — 2026-10-23
+
 ### Changed
 
 - **All four charts**: `appVersion` bumped `36.0.4` → **`36.0.5`** (upstream OpenNMS Horizon), lock-step. The default `opennms/horizon`, `opennms/minion` and `opennms/sentinel` image tags follow `appVersion`, so pods pull `36.0.5` on the next roll. The daemons Horizon enables by default are unchanged, so the `core` `daemons` toggles cover the same set.
+- **All four charts**: chart `version` bumped `0.5.1` → **`0.5.2`**. Umbrella `dependencies` strict-pinned to `=0.5.2`.
 
 ## [0.5.1] — 2026-10-22
 
@@ -317,7 +320,8 @@ First published release of the OpenNMS Helm Charts.
 - `core.postgresql.host` defaults to a CNPG-specific hostname (`cluster-helm-lint-rw.default.svc.cluster.local`) used by the in-repo chart-testing flow. Production users must set `postgresql.host` explicitly — the chart fails template-time on missing host.
 - The optional `prometheus-remote-writer` plugin is downloaded from GitHub Releases at every pod start when enabled. Air-gapped clusters override `prometheusRemoteWriter.kar.url` to an internal mirror.
 
-[Unreleased]: https://github.com/labmonkeys-space/opennms-helm-charts/compare/v0.5.1...HEAD
+[Unreleased]: https://github.com/labmonkeys-space/opennms-helm-charts/compare/v0.5.2...HEAD
+[0.5.2]: https://github.com/labmonkeys-space/opennms-helm-charts/compare/v0.5.1...v0.5.2
 [0.5.1]: https://github.com/labmonkeys-space/opennms-helm-charts/compare/v0.5.0...v0.5.1
 [0.5.0]: https://github.com/labmonkeys-space/opennms-helm-charts/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/labmonkeys-space/opennms-helm-charts/compare/v0.3.8...v0.4.0
