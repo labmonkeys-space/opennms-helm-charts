@@ -10,6 +10,10 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). All
 
 - **repo**: the release workflow signs every chart it pushes to GHCR with cosign keyless and records SLSA build provenance for the OCI digest and the `.tgz`. `RELEASING.md` shows the `cosign verify` and `gh attestation verify` commands. 0.5.0 and earlier are unsigned. ([#43](https://github.com/labmonkeys-space/opennms-helm-charts/issues/43))
 
+### Fixed
+
+- **`core`**: the Web UI admin password from `<release>-opennms-admin` is now applied on the upgrade that creates that Secret. Before, a release installed with a chart without `webAdmin` (0.3.x), or with `webAdmin.enabled: false`, got the Secret on upgrade but kept `admin`/`admin`, because the bootstrap Job ran on install only. The Job now also runs as a `post-upgrade` hook, but only when the chart-managed Secret does not exist yet. Every other upgrade still skips it, and `webAdmin.existingSecret` releases are unchanged. If `admin`/`admin` was already changed by hand, that upgrade fails after the readiness budget with a message naming `webAdmin.existingSecret` and `webAdmin.enabled: false`. Releases that already have the Secret but never got its password are not repaired: apply it once by hand. ([#48](https://github.com/labmonkeys-space/opennms-helm-charts/issues/48))
+
 ## [0.5.0] — 2026-10-03
 
 ### Added

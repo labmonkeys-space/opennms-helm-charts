@@ -103,10 +103,15 @@ httpRoute:
 #   kubectl -n <namespace> get secret <release>-opennms-admin \
 #     -o jsonpath='{.data.password}' | base64 -d ; echo
 #
-# BOOTSTRAP-SEED SEMANTICS: the password is set ONCE at install. The chart
-# never re-asserts it — change it later in the UI and it sticks. The Secret is
-# created only if it does not already exist (preserved across upgrades via
-# Helm `lookup`), so `helm upgrade` and re-runs never rotate it.
+# BOOTSTRAP-SEED SEMANTICS: the password is set ONCE, when the Secret is
+# created. That is the install, or the one upgrade that creates the Secret (an
+# upgrade from a chart without webAdmin, or `enabled` turned on later). The
+# chart never re-asserts it — change it later in the UI and it sticks. The
+# Secret is created only if it does not already exist (preserved across
+# upgrades via Helm `lookup`), so `helm upgrade` and re-runs never rotate it.
+# If admin/admin was already changed by hand when the Secret is created, the
+# hook fails after the readiness budget and says so: point `existingSecret` at
+# the current password, or set `enabled: false`.
 #
 # UMBRELLA WARNING: under opennms-stack, any Minion or Sentinel that
 # authenticates to Core as the shared `admin` account (via

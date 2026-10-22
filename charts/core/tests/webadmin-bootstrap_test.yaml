@@ -1,0 +1,70 @@
+# Copyright 2026 Ronny Trommer <ronny@no42.org>
+# SPDX-License-Identifier: Apache-2.0
+suite: core webAdmin bootstrap hook
+templates:
+  - templates/webadmin-bootstrap-job.yaml
+  - templates/webadmin-onmsctl-config.yaml
+release:
+  name: onms
+  namespace: opennms
+set:
+  postgresql.host: pg.example
+tests:
+  - it: renders the hook on install
+    asserts:
+      - hasDocuments:
+          count: 1
+      - equal:
+          path: metadata.annotations["helm.sh/hook"]
+          value: post-install,post-upgrade
+  - it: renders the hook on the upgrade that creates the admin Secret
+    release:
+      upgrade: true
+    asserts:
+      - hasDocuments:
+          count: 1
+      - equal:
+          path: metadata.annotations["helm.sh/hook"]
+          value: post-install,post-upgrade
+  - it: renders no hook on an upgrade when the admin Secret exists
+    release:
+      upgrade: true
+    kubernetesProvider:
+      scheme:
+        "v1/Secret":
+          gvr:
+            version: v1
+            resource: secrets
+          namespaced: true
+      objects:
+        - apiVersion: v1
+          kind: Secret
+          metadata:
+            name: onms-opennms-admin
+            namespace: opennms
+          data:
+            username: YWRtaW4=
+            password: c2VjcmV0
+    asserts:
+      - hasDocuments:
+          count: 0
+  - it: renders no hook on an upgrade with an operator-supplied Secret
+    release:
+      upgrade: true
+    set:
+      webAdmin.existingSecret: my-admin
+    asserts:
+      - hasDocuments:
+          count: 0
+  - it: renders the hook on install with an operator-supplied Secret
+    set:
+      webAdmin.existingSecret: my-admin
+    asserts:
+      - hasDocuments:
+          count: 1
+  - it: renders no hook when the feature is disabled
+    set:
+      webAdmin.enabled: false
+    asserts:
+      - hasDocuments:
+          count: 0
