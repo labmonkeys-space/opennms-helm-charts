@@ -332,7 +332,7 @@ install-kafka: kind-create
 	@kubectl apply -f stubs/kafka/kafka.yaml 1>/dev/null
 	@echo "$(OK)"
 	@echo -n "⏱️ Waiting for Kafka ready    ... "
-	@kubectl wait --for=condition=ready --timeout=300s pod/kafka-0 -n default 1>/dev/null
+	@kubectl rollout status statefulset/kafka -n default --timeout=300s 1>/dev/null
 	@echo "$(OK)"
 
 .PHONY: clean-kafka
