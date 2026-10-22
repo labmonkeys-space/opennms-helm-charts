@@ -6,6 +6,10 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). All
 
 ## [Unreleased]
 
+### Changed
+
+- **All four charts**: `appVersion` bumped `36.0.4` → **`36.0.5`** (upstream OpenNMS Horizon), lock-step. The default `opennms/horizon`, `opennms/minion` and `opennms/sentinel` image tags follow `appVersion`, so pods pull `36.0.5` on the next roll. The daemons Horizon enables by default are unchanged, so the `core` `daemons` toggles cover the same set.
+
 ## [0.5.1] — 2026-10-22
 
 ### Added
