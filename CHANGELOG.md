@@ -6,6 +6,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). All
 
 ## [Unreleased]
 
+## [0.5.1] — 2026-10-22
+
 ### Added
 
 - **repo**: the release workflow signs every chart it pushes to GHCR with cosign keyless and records SLSA build provenance for the OCI digest and the `.tgz`. `RELEASING.md` shows the `cosign verify` and `gh attestation verify` commands. 0.5.0 and earlier are unsigned. ([#43](https://github.com/labmonkeys-space/opennms-helm-charts/issues/43))
@@ -13,6 +15,11 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). All
 ### Fixed
 
 - **`core`**: the Web UI admin password from `<release>-opennms-admin` is now applied on the upgrade that creates that Secret. Before, a release installed with a chart without `webAdmin` (0.3.x), or with `webAdmin.enabled: false`, got the Secret on upgrade but kept `admin`/`admin`, because the bootstrap Job ran on install only. The Job now also runs as a `post-upgrade` hook, but only when the chart-managed Secret does not exist yet. Every other upgrade still skips it, and `webAdmin.existingSecret` releases are unchanged. If `admin`/`admin` was already changed by hand, that upgrade fails after the readiness budget with a message naming `webAdmin.existingSecret` and `webAdmin.enabled: false`. Releases that already have the Secret but never got its password are not repaired: apply it once by hand. ([#48](https://github.com/labmonkeys-space/opennms-helm-charts/issues/48))
+
+### Changed
+
+- **`core`**: `webAdmin.image` (onmsctl) bumped `0.4.10` → `0.6.2`. Every amd64 onmsctl image up to 0.6.1 failed to start (`exec /usr/local/bin/onmsctl: no such file or directory`, [no42-org/onmsctl#182](https://github.com/no42-org/onmsctl/issues/182)), so the admin bootstrap Job never set the password on amd64 clusters. 0.6.2 ships a static binary. ([#47](https://github.com/labmonkeys-space/opennms-helm-charts/pull/47))
+- **All four charts**: chart `version` bumped `0.5.0` → **`0.5.1`**. Umbrella `dependencies` strict-pinned to `=0.5.1`. `appVersion` stays `36.0.4`.
 
 ## [0.5.0] — 2026-10-03
 
@@ -306,7 +313,9 @@ First published release of the OpenNMS Helm Charts.
 - `core.postgresql.host` defaults to a CNPG-specific hostname (`cluster-helm-lint-rw.default.svc.cluster.local`) used by the in-repo chart-testing flow. Production users must set `postgresql.host` explicitly — the chart fails template-time on missing host.
 - The optional `prometheus-remote-writer` plugin is downloaded from GitHub Releases at every pod start when enabled. Air-gapped clusters override `prometheusRemoteWriter.kar.url` to an internal mirror.
 
-[Unreleased]: https://github.com/labmonkeys-space/opennms-helm-charts/compare/v0.4.0...HEAD
+[Unreleased]: https://github.com/labmonkeys-space/opennms-helm-charts/compare/v0.5.1...HEAD
+[0.5.1]: https://github.com/labmonkeys-space/opennms-helm-charts/compare/v0.5.0...v0.5.1
+[0.5.0]: https://github.com/labmonkeys-space/opennms-helm-charts/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/labmonkeys-space/opennms-helm-charts/compare/v0.3.8...v0.4.0
 [0.3.8]: https://github.com/labmonkeys-space/opennms-helm-charts/compare/v0.3.7...v0.3.8
 [0.3.7]: https://github.com/labmonkeys-space/opennms-helm-charts/compare/v0.3.6...v0.3.7
