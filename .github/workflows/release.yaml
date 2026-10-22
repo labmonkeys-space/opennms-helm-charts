@@ -15,7 +15,7 @@ on:
 
 jobs:
   release:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04  # was ubuntu-latest
     permissions:
       contents: write      # chart-releaser-action: create Releases, push gh-pages
       packages: write      # helm push + cosign signatures: GHCR OCI artifacts
