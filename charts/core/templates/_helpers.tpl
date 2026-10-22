@@ -524,3 +524,16 @@ when no operator `webAdmin.existingSecret` is supplied. Returns "" otherwise.
 {{- define "core.webAdminLabMode" -}}
 {{- if not (.Values.webAdmin.existingSecret | default "") -}}true{{- end -}}
 {{- end }}
+
+{{/*
+Returns "true" when the admin-password bootstrap hook should render: always on
+install, and on the upgrade that first creates the chart-managed Secret (an
+upgrade from a chart without webAdmin, or webAdmin turned on later). Every
+other upgrade skips it so a password changed in the UI is never re-asserted.
+`lookup` is empty off-cluster (`helm template`), so the hook renders there.
+*/}}
+{{- define "core.webAdminRunHook" -}}
+{{- if .Release.IsInstall -}}true
+{{- else if and (include "core.webAdminLabMode" .) (not (lookup "v1" "Secret" .Release.Namespace (include "core.webAdminSecretName" .))) -}}true
+{{- end -}}
+{{- end }}

@@ -1,7 +1,8 @@
 {{- /*
-Post-install hook that bootstraps the Web UI `admin` password (see design.md
-D1/D3). Runs at INSTALL ONLY (`post-install`, not `post-upgrade`), so an
-upgrade never re-rotates the password.
+Hook that bootstraps the Web UI `admin` password (see design.md D1/D3). It
+renders on install, and on the one upgrade that creates the chart-managed
+Secret (`core.webAdminRunHook`, #48). Every other upgrade skips it, so the
+password is never re-rotated or re-asserted.
 
 onmsctl integration constraints (verified against onmsctl 0.4.2 on a live
 kind cluster):
@@ -24,11 +25,11 @@ server-side. The one gap: if Horizon applies the change but the pod dies before
 exit 0, later retries authenticate as admin/admin (now invalid) and fail — the
 password IS set, but the hook reports failure. Recovery: read the Secret and,
 if needed, re-apply manually (`onmsctl iam user set-password`). Because this is
-a `post-install` hook, a hook failure marks the Helm release failed even though
+a Helm hook, a hook failure marks the Helm release failed even though
 Core itself is healthy; operators who cannot tolerate that set
 `webAdmin.enabled: false` (and provision the password out-of-band).
 */ -}}
-{{- if .Values.webAdmin.enabled }}
+{{- if and .Values.webAdmin.enabled (include "core.webAdminRunHook" .) }}
 ---
 apiVersion: batch/v1
 kind: Job
@@ -38,7 +39,7 @@ metadata:
   labels:
     {{- include "core.labels" . | nindent 4 }}
   annotations:
-    "helm.sh/hook": post-install
+    "helm.sh/hook": post-install,post-upgrade
     "helm.sh/hook-weight": "5"
     "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
 spec:
@@ -87,10 +88,17 @@ spec:
               auth="$(printf '%s' 'admin:admin' | base64 | tr -d '\n')"
               url="http://{{ include "core.fullname" . }}:{{ .Values.service.webui.port }}/opennms/rest/users"
               i=0
-              until wget -q -O /dev/null --header="Authorization: Basic $auth" "$url"; do
+              until out="$(wget -q -O /dev/null --header="Authorization: Basic $auth" "$url" 2>&1)"; do
                 i=$((i+1))
                 if [ "$i" -ge {{ .Values.webAdmin.readiness.retries }} ]; then
-                  echo "core REST not ready after {{ .Values.webAdmin.readiness.retries }} attempts" >&2
+                  # busybox wget reports "server returned error: HTTP/1.1 401 ..."
+                  if printf '%s\n' "$out" | grep -q 'HTTP/[0-9.]* 401'; then
+                    echo "core rejects admin/admin: the admin password was changed outside the chart," >&2
+                    echo "so Secret {{ include "core.webAdminSecretName" . }} does not match it and was not applied." >&2
+                    echo "Set webAdmin.existingSecret to a Secret holding the current password, or set webAdmin.enabled: false." >&2
+                  else
+                    echo "core REST not ready after {{ .Values.webAdmin.readiness.retries }} attempts: $out" >&2
+                  fi
                   exit 1
                 fi
                 echo "waiting for core REST ($i/{{ .Values.webAdmin.readiness.retries }})..."

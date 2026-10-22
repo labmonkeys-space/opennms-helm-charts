@@ -4,10 +4,11 @@ requires a config file to exist (env vars are only overrides on top of a
 loaded context), so the hook Job mounts this and points ONMSCTL_CONFIG at it.
 
 The context's basic auth is the upstream default admin/admin — the public
-first-boot login the hook replaces, not a secret. Rendered as a `post-install`
-hook (weight 0, before the Job at weight 5) and cleaned up on success.
+first-boot login the hook replaces, not a secret. Rendered as a hook (weight 0,
+before the Job at weight 5) under the same condition as the Job
+(`core.webAdminRunHook`) and cleaned up on success.
 */ -}}
-{{- if .Values.webAdmin.enabled }}
+{{- if and .Values.webAdmin.enabled (include "core.webAdminRunHook" .) }}
 ---
 apiVersion: v1
 kind: ConfigMap
@@ -17,7 +18,7 @@ metadata:
   labels:
     {{- include "core.labels" . | nindent 4 }}
   annotations:
-    "helm.sh/hook": post-install
+    "helm.sh/hook": post-install,post-upgrade
     "helm.sh/hook-weight": "0"
     "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
 data:
