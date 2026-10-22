@@ -16,8 +16,35 @@ runs:
         python-version: "3.x"
         check-latest: true
 
+    # chart-testing is installed here instead of with helm/chart-testing-action:
+    # that action runs astral-sh/setup-uv with its cache on and no input to turn
+    # it off, which warns "No file matched ... The cache will never get
+    # invalidated" on every job. Same steps as its ct.sh: cosign-verified ct
+    # tarball, yamllint + yamale (pip instead of uv), CT_CONFIG_DIR.
+    - uses: sigstore/cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6  # v4.1.2
+
     - name: Set up chart-testing
-      uses: helm/chart-testing-action@6ec842c01de15ebb84c8627d2744a0c2f2755c9f  # v2.8.0
+      shell: bash
+      env:
+        CT_VERSION: "3.14.0"
+        YAMLLINT_VERSION: "1.33.0"
+        YAMALE_VERSION: "6.0.0"
+      run: |
+        set -euo pipefail
+        dir="${RUNNER_TEMP}/ct"
+        url="https://github.com/helm/chart-testing/releases/download/v${CT_VERSION}/chart-testing_${CT_VERSION}_linux_amd64.tar.gz"
+        mkdir -p "${dir}"
+        curl --retry 5 --retry-delay 1 -sSfLo "${dir}/ct.tar.gz" "${url}"
+        cosign verify-blob \
+          --certificate "${url}.pem" --signature "${url}.sig" \
+          --certificate-identity "https://github.com/helm/chart-testing/.github/workflows/release.yaml@refs/heads/main" \
+          --certificate-oidc-issuer "https://token.actions.githubusercontent.com" \
+          "${dir}/ct.tar.gz"
+        tar -xzf "${dir}/ct.tar.gz" -C "${dir}"
+        python -m pip install --quiet "yamllint==${YAMLLINT_VERSION}" "yamale==${YAMALE_VERSION}"
+        echo "${dir}" >> "${GITHUB_PATH}"
+        echo "CT_CONFIG_DIR=${dir}/etc" >> "${GITHUB_ENV}"
+        "${dir}/ct" version
 
     - name: Create kind cluster
       uses: helm/kind-action@92086f6be054225fa813e0a4b13787fc9088faab  # v1.13.0
