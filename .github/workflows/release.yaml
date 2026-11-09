@@ -60,7 +60,7 @@ jobs:
       # published, creates GitHub Releases, attaches .tgz, updates index.yaml on
       # the gh-pages branch. The action handles helm-dep-update for the umbrella.
       - name: Run chart-releaser
-        uses: helm/chart-releaser-action@df287104677278f869ca5480bd260358397cc3f9  # v1.8.0
+        uses: helm/chart-releaser-action@92c6b97fa9f664492a2592e0d1d80bc6bf378957  # v1.9.0
         env:
           CR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
@@ -73,7 +73,7 @@ jobs:
         run: echo "${{ secrets.GITHUB_TOKEN }}" | helm registry login ghcr.io -u "${{ github.actor }}" --password-stdin
 
       - name: Install cosign
-        uses: sigstore/cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6  # v4.1.2
+        uses: sigstore/cosign-installer@756fe2d284c7292c4e9b62c8a28f1e5629c59532  # v4.1.3
 
       # Push each chart, sign it by digest with cosign keyless, and record the
       # OCI digest and the .tgz digest as provenance subjects. Pages and
